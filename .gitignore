@@ -1,0 +1,5 @@
+ucook_nutrition.html
+ucook_nutrition_results.csv
+__pycache__/
+*.pyc
+.DS_Store
