@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UCook Nutrition Ranker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f5f5f0;
+    color: #222;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  /* ── Sticky top bar ── */
+  .top-bar {
+    flex-shrink: 0;
+    background: #f5f5f0;
+    padding: 16px 20px 0;
+    z-index: 10;
+  }
+
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  h1 { font-size: 1.3rem; font-weight: 700; }
+  .meta { font-size: 0.8rem; color: #999; margin-top: 2px; }
+
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .btn {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-fetch { background: #1b5e20; color: white; }
+  .btn-fetch:hover { background: #145a1c; }
+  .btn-fetch:disabled { background: #a5d6a7; cursor: not-allowed; }
+  .btn-dl { background: #e8e8e3; color: #333; }
+  .btn-dl:hover { background: #ddddd8; }
+  .btn-dl:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  input[type=search] {
+    padding: 7px 11px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    width: 185px;
+    background: white;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 0.78rem;
+    color: #555;
+    padding: 8px 0 10px;
+    border-bottom: 1px solid #e0e0da;
+    margin-bottom: 0;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-Gold     { background: #ffd700; color: #5a3e00; }
+  .badge-Silver   { background: #c8c8c8; color: #333; }
+  .badge-Bronze   { background: #cd7f32; color: white; }
+  .badge-Unranked { background: #e0e0e0; color: #666; }
+
+  /* ── Table scroll container ── */
+  .table-wrap {
+    flex: 1;
+    overflow: auto;
+    margin-top: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 0.83rem;
+  }
+
+  thead tr {
+    background: #1a1a1a;
+    color: white;
+  }
+
+  th {
+    padding: 10px 11px;
+    text-align: left;
+    white-space: nowrap;
+    user-select: none;
+    cursor: pointer;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #1a1a1a;
+  }
+  th.num { text-align: right; }
+  th:hover { background: #2e2e2e; }
+  th.sorted-asc::after  { content: " ▲"; font-size: 0.6em; opacity: 0.75; }
+  th.sorted-desc::after { content: " ▼"; font-size: 0.6em; opacity: 0.75; }
+  th.secondary-sort::after { content: " ·"; font-size: 0.8em; opacity: 0.4; }
+
+  td {
+    padding: 9px 11px;
+    border-bottom: 1px solid #f0f0eb;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafaf7; }
+
+  tr.row-Gold     td:first-child { border-left: 3px solid #ffd700; }
+  tr.row-Silver   td:first-child { border-left: 3px solid #c8c8c8; }
+  tr.row-Bronze   td:first-child { border-left: 3px solid #cd7f32; }
+  tr.row-Unranked td:first-child { border-left: 3px solid #e0e0e0; }
+
+  .meal-name { font-weight: 600; line-height: 1.3; }
+  .meal-sub  { font-size: 0.77rem; color: #888; margin-top: 2px; }
+  .meal-link { font-size: 0.74rem; margin-top: 3px; }
+  .meal-link a { color: #2e7d32; text-decoration: none; }
+  .meal-link a:hover { text-decoration: underline; }
+
+  .flags { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px; }
+  .flag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.71rem;
+    white-space: nowrap;
+  }
+  .flag-warn { background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; }
+  .flag-info { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
+
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── Status / empty states ── */
+  .status-bar {
+    padding: 4px 20px 6px;
+    font-size: 0.8rem;
+    color: #999;
+    flex-shrink: 0;
+    min-height: 24px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #aaa;
+    font-size: 0.95rem;
+  }
+  .empty-state p { margin-top: 8px; font-size: 0.83rem; }
+
+  /* ── Worker URL setup ── */
+  .setup-bar {
+    background: #fffde7;
+    border-bottom: 1px solid #ffe082;
+    padding: 8px 20px;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .setup-bar input {
+    flex: 1;
+    min-width: 240px;
+    padding: 5px 9px;
+    border: 1px solid #ffd54f;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    background: white;
+  }
+  .btn-save { background: #f9a825; color: white; }
+  .btn-save:hover { background: #f57f17; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-row">
+    <div>
+      <h1>UCook Nutrition Ranker</h1>
+      <div class="meta" id="meta">Per serving · dinner meals only</div>
+    </div>
+    <div class="controls">
+      <input type="search" id="search" placeholder="Search meals…" oninput="renderTable()" disabled>
+      <button class="btn btn-dl" id="btnDl" onclick="downloadCSV()" disabled>⬇ CSV</button>
+      <button class="btn btn-fetch" id="btnFetch" onclick="loadMeals()">Load this week's meals</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item">
+      <span class="badge badge-Gold">Gold</span>
+      all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg
+    </div>
+    <div class="legend-item">
+      <span class="badge badge-Silver">Silver</span>
+      3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg
+    </div>
+    <div class="legend-item">
+      <span class="badge badge-Bronze">Bronze</span>
+      2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg
+    </div>
+    <div class="legend-item" style="color:#c62828">
+      <span class="flag flag-warn">⚑ red flag</span>
+      Sodium &gt;1800mg · Sat Fat &gt;20g · Sugar &gt;25g · Protein &lt;35g · Fibre &lt;5g · &gt;1000 kcal
+    </div>
+    <div class="legend-item" style="color:#e65100">
+      <span class="flag flag-info">⚑ info flag</span>
+      Beetroot · Fried · Mushrooms
+    </div>
+  </div>
+</div>
+
+<div class="setup-bar" id="setupBar" style="display:none">
+  ⚙️ Enter your Cloudflare Worker URL to connect:
+  <input type="url" id="workerInput" placeholder="https://your-worker.workers.dev">
+  <button class="btn btn-save" onclick="saveWorkerUrl()">Save</button>
+</div>
+
+<div class="status-bar" id="statusBar"></div>
+
+<div class="table-wrap">
+  <table id="tbl" style="display:none">
+    <thead>
+      <tr>
+        <th onclick="sortBy('rankOrder')" data-col="rankOrder" class="sorted-asc">Rank</th>
+        <th onclick="sortBy('category')" data-col="category">Category</th>
+        <th onclick="sortBy('proteinSource')" data-col="proteinSource">Protein source</th>
+        <th onclick="sortBy('name')" data-col="name">Meal</th>
+        <th onclick="sortBy('cookTime')" data-col="cookTime">Cook time</th>
+        <th onclick="sortBy('cookWithin')" data-col="cookWithin" class="num">Eat within</th>
+        <th onclick="sortBy('protein')" data-col="protein" class="num">Protein (g)</th>
+        <th onclick="sortBy('fibre')" data-col="fibre" class="num">Fibre (g)</th>
+        <th onclick="sortBy('fat')" data-col="fat" class="num">Fat (g)</th>
+        <th onclick="sortBy('saturatedFat')" data-col="saturatedFat" class="num">Sat Fat (g)</th>
+        <th onclick="sortBy('carbs')" data-col="carbs" class="num">Carbs (g)</th>
+        <th onclick="sortBy('sugars')" data-col="sugars" class="num">Sugars (g)</th>
+        <th onclick="sortBy('sodium')" data-col="sodium" class="num">Sodium (mg)</th>
+        <th onclick="sortBy('kcal')" data-col="kcal" class="num">Kcal</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState">
+    <div>Click <strong>Load this week's meals</strong> to fetch the current UCook menu.</div>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const WORKER_STORAGE_KEY = 'ucook_worker_url';
+
+function getWorkerUrl() {
+  return localStorage.getItem(WORKER_STORAGE_KEY) || '';
+}
+
+function saveWorkerUrl() {
+  const url = document.getElementById('workerInput').value.trim().replace(/\/$/, '');
+  if (!url) return;
+  localStorage.setItem(WORKER_STORAGE_KEY, url);
+  document.getElementById('setupBar').style.display = 'none';
+  setStatus('Worker URL saved. Loading meals…');
+  loadMeals();
+}
+
+// ── GraphQL ──────────────────────────────────────────────────────────────────
+const MENU_QUERY = `{ activeMenu { menuDishes { list { id name slug } } } }`;
+
+const DISH_QUERY = `
+query GetDish($slug: String!) {
+  oneMealKitDish(slug: $slug, status: [PUBLISHED]) {
+    name subTitle slug description
+    cookWithin
+    overallTime { min max }
+    sentIngredients
+    mealKitCategories { title }
+    nutritionPerServing {
+      protein fibre fat saturatedFat carbs sugars salt energyInKiloCalories
+    }
+  }
+}`;
+
+async function gql(query, variables) {
+  const url = getWorkerUrl();
+  if (!url) throw new Error('NO_WORKER');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── Data loading ──────────────────────────────────────────────────────────────
+let ALL_MEALS = [];
+
+async function loadMeals() {
+  const workerUrl = getWorkerUrl();
+  if (!workerUrl) {
+    document.getElementById('setupBar').style.display = 'flex';
+    document.getElementById('workerInput').value = workerUrl;
+    setStatus('Enter your Cloudflare Worker URL above to get started.');
+    return;
+  }
+
+  const btn = document.getElementById('btnFetch');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  document.getElementById('search').disabled = true;
+  document.getElementById('btnDl').disabled = true;
+  document.getElementById('tbl').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+
+  try {
+    setStatus('Fetching this week\'s menu…');
+    const menuData = await gql(MENU_QUERY);
+    const slugs = (menuData?.data?.activeMenu?.menuDishes?.list || [])
+      .map(d => d.slug)
+      .filter((s, i, a) => a.indexOf(s) === i);
+
+    if (!slugs.length) throw new Error('No meals found in active menu.');
+
+    const meals = [];
+    for (let i = 0; i < slugs.length; i++) {
+      setStatus(`Fetching meal ${i + 1} of ${slugs.length}…`);
+      try {
+        const data = await gql(DISH_QUERY, { slug: slugs[i] });
+        const dish = data?.data?.oneMealKitDish;
+        if (!dish) continue;
+
+        const cats = (dish.mealKitCategories || []).map(c => c.title || '');
+        if (cats.some(c => c.toLowerCase().includes('lunch'))) continue;
+
+        const n = dish.nutritionPerServing || {};
+        const overall = dish.overallTime || {};
+
+        meals.push({
+          name:          dish.name || '',
+          subTitle:      dish.subTitle || '',
+          slug:          slugs[i],
+          url:           `https://www.ucook.co.za/meal-kit/${slugs[i]}`,
+          category:      cats[0] || '',
+          proteinSource: detectProteinSource(dish.sentIngredients || [], dish.name || ''),
+          cookTime:      overall.min ? `${overall.min}–${overall.max} min` : '',
+          cookWithin:    dish.cookWithin || 0,
+          protein:       n.protein || 0,
+          fibre:         n.fibre || 0,
+          fat:           n.fat || 0,
+          saturatedFat:  n.saturatedFat || 0,
+          carbs:         n.carbs || 0,
+          sugars:        n.sugars || 0,
+          sodium:        n.salt || 0,
+          kcal:          n.energyInKiloCalories || 0,
+          description:   dish.description || '',
+          sentIngredients: dish.sentIngredients || [],
+        });
+      } catch (e) {
+        console.warn(`Skipped ${slugs[i]}:`, e);
+      }
+    }
+
+    ALL_MEALS = meals.map(m => ({
+      ...m,
+      rank:      computeRank(m),
+      rankOrder: RANK_ORDER[computeRank(m)],
+      infoFlags: computeInfoFlags(m),
+      redFlags:  computeRedFlags(m),
+    }));
+
+    document.getElementById('tbl').style.display = '';
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('search').disabled = false;
+    document.getElementById('btnDl').disabled = false;
+
+    const counts = {};
+    ALL_MEALS.forEach(m => counts[m.rank] = (counts[m.rank] || 0) + 1);
+    const summary = ['Gold','Silver','Bronze','Unranked']
+      .filter(r => counts[r])
+      .map(r => `${counts[r]} ${r}`)
+      .join(' · ');
+    const d = new Date();
+    document.getElementById('meta').textContent =
+      `Per serving · dinner meals only · ${d.toLocaleDateString('en-ZA', {day:'numeric',month:'long',year:'numeric'})}`;
+    setStatus(`${ALL_MEALS.length} meals loaded: ${summary}`);
+    renderTable();
+
+  } catch (e) {
+    if (e.message === 'NO_WORKER') {
+      document.getElementById('setupBar').style.display = 'flex';
+      setStatus('Enter your Cloudflare Worker URL above.');
+    } else {
+      setStatus(`Error: ${e.message}`);
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Refresh';
+  }
+}
+
+// ── Protein source detection ──────────────────────────────────────────────────
+const PROTEIN_SOURCES = [
+  ['Ostrich',     ['ostrich']],
+  ['Venison',     ['venison','springbok','kudu','impala','warthog']],
+  ['Lamb',        ['lamb','mutton']],
+  ['Wagyu Beef',  ['wagyu']],
+  ['Beef',        ['beef','sirloin','brisket','ribeye','rump','oxtail']],
+  ['Beef Mince',  ['beef mince','mince']],
+  ['Pork',        ['pork','banger','sausage','chorizo','bacon','ham','pancetta']],
+  ['Chicken',     ['chicken','poultry']],
+  ['Duck',        ['duck']],
+  ['Salmon',      ['salmon']],
+  ['Trout',       ['trout']],
+  ['Hake',        ['hake']],
+  ['Swordfish',   ['swordfish']],
+  ['Fish',        ['fish fillet','fish']],
+  ['Mussels',     ['mussel']],
+  ['Seafood',     ['prawn','shrimp','calamari','squid','crab','lobster']],
+  ['Eggs',        ['egg']],
+  ['Tofu',        ['tofu','tempeh']],
+];
+
+function detectProteinSource(ingredients, name) {
+  const text = [...ingredients, name].join(' ').toLowerCase();
+  for (const [label, keywords] of PROTEIN_SOURCES) {
+    if (keywords.some(k => text.includes(k))) return label;
+  }
+  return 'Plant-based';
+}
+
+// ── Ranking ───────────────────────────────────────────────────────────────────
+const RANK_ORDER = { Gold: 0, Silver: 1, Bronze: 2, Unranked: 3 };
+
+function hasBeetroot(m) {
+  return [m.name, m.subTitle, m.description, ...m.sentIngredients]
+    .join(' ').toLowerCase().includes('beetroot');
+}
+
+function isPrimarilyFried(m) {
+  const text = [m.name, m.subTitle, m.description].join(' ').toLowerCase();
+  if (['deep fry','deep-fry','deep fried','deep-fried'].some(w => text.includes(w))) return true;
+  const n = m.name.toLowerCase();
+  return n.startsWith('fried ') || n.includes(' fried ');
+}
+
+function computeRank(m) {
+  if (hasBeetroot(m) || isPrimarilyFried(m)) return 'Unranked';
+  const { protein: p, fibre: f, saturatedFat: s, sodium: n } = m;
+  if (p >= 50 && f >= 10 && s <= 10 && n <= 1200) return 'Gold';
+  if ([p >= 50, f >= 8,  s <= 13, n <= 1500].filter(Boolean).length >= 3) return 'Silver';
+  if ([p >= 40, f >= 6,  s <= 15, n <= 1800].filter(Boolean).length >= 2) return 'Bronze';
+  return 'Unranked';
+}
+
+function computeInfoFlags(m) {
+  const flags = [];
+  if (hasBeetroot(m))    flags.push('Contains beetroot');
+  if (isPrimarilyFried(m)) flags.push('Primarily fried');
+  if ([m.name, m.subTitle, ...m.sentIngredients].join(' ').toLowerCase().includes('mushroom'))
+    flags.push('Contains mushrooms');
+  return flags;
+}
+
+function computeRedFlags(m) {
+  const flags = [];
+  if (m.sodium > 1800)      flags.push('Sodium >1800mg');
+  if (m.saturatedFat > 20)  flags.push('Sat Fat >20g');
+  if (m.sugars > 25)        flags.push('Sugar >25g');
+  if (m.protein < 35)       flags.push('Protein <35g');
+  if (m.fibre < 5)          flags.push('Fibre <5g');
+  if (m.kcal > 1000)        flags.push('>1000 kcal');
+  return flags;
+}
+
+// ── Sorting ───────────────────────────────────────────────────────────────────
+const STRING_COLS = new Set(['name','cookTime','category','proteinSource']);
+const DEFAULT_DIR = col => (STRING_COLS.has(col) || col === 'rankOrder' || col === 'cookWithin') ? 1 : -1;
+
+let sortStack = [{ col: 'rankOrder', dir: 1 }];
+
+function sortBy(col) {
+  if (sortStack[0].col === col) {
+    sortStack[0].dir *= -1;
+  } else {
+    sortStack = [{ col, dir: DEFAULT_DIR(col) }, sortStack[0]].slice(0, 2);
+  }
+  renderTable();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let rows = ALL_MEALS.filter(m =>
+    !q ||
+    m.name.toLowerCase().includes(q) ||
+    (m.subTitle || '').toLowerCase().includes(q) ||
+    (m.category || '').toLowerCase().includes(q) ||
+    (m.proteinSource || '').toLowerCase().includes(q)
+  );
+
+  rows.sort((a, b) => {
+    for (const { col, dir } of sortStack) {
+      let av = a[col] ?? (typeof b[col] === 'string' ? '' : 0);
+      let bv = b[col] ?? (typeof a[col] === 'string' ? '' : 0);
+      const r = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
+      if (r !== 0) return dir * r;
+    }
+    return 0;
+  });
+
+  document.querySelectorAll('th').forEach(th => {
+    th.classList.remove('sorted-asc', 'sorted-desc', 'secondary-sort');
+    const idx = sortStack.findIndex(s => s.col === th.dataset.col);
+    if (idx === 0) th.classList.add(sortStack[0].dir === 1 ? 'sorted-asc' : 'sorted-desc');
+    else if (idx === 1) th.classList.add('secondary-sort');
+  });
+
+  document.getElementById('tbody').innerHTML = rows.map(m => `
+    <tr class="row-${m.rank}">
+      <td><span class="badge badge-${m.rank}">${m.rank}</span></td>
+      <td style="white-space:nowrap;font-size:0.79rem;color:#555">${esc(m.category)}</td>
+      <td style="white-space:nowrap;font-size:0.79rem">${esc(m.proteinSource)}</td>
+      <td>
+        <div class="meal-name">${esc(m.name)}</div>
+        ${m.subTitle ? `<div class="meal-sub">${esc(m.subTitle)}</div>` : ''}
+        ${(m.redFlags.length || m.infoFlags.length) ? `
+          <div class="flags">
+            ${m.redFlags.map(f => `<span class="flag flag-warn">⚑ ${esc(f)}</span>`).join('')}
+            ${m.infoFlags.map(f => `<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}
+          </div>` : ''}
+        <div class="meal-link"><a href="${m.url}" target="_blank">View on UCook ↗</a></div>
+      </td>
+      <td style="white-space:nowrap;font-size:0.8rem">${esc(m.cookTime)}</td>
+      <td class="num" style="font-size:0.8rem">${m.cookWithin ? m.cookWithin + 'd' : '—'}</td>
+      <td class="num">${fmt(m.protein)}</td>
+      <td class="num">${fmt(m.fibre)}</td>
+      <td class="num">${fmt(m.fat)}</td>
+      <td class="num">${fmt(m.saturatedFat)}</td>
+      <td class="num">${fmt(m.carbs)}</td>
+      <td class="num">${fmt(m.sugars)}</td>
+      <td class="num">${Math.round(m.sodium)}</td>
+      <td class="num">${Math.round(m.kcal)}</td>
+    </tr>
+  `).join('');
+}
+
+// ── CSV ───────────────────────────────────────────────────────────────────────
+function downloadCSV() {
+  const cols = ['rank','category','proteinSource','name','subTitle','url','cookTime','cookWithin',
+                'protein','fibre','fat','saturatedFat','carbs','sugars','sodium','kcal'];
+  const headers = ['Rank','Category','Protein Source','Name','Sub-title','URL','Cook Time','Eat Within (days)',
+                   'Protein (g)','Fibre (g)','Fat (g)','Sat Fat (g)','Carbs (g)','Sugars (g)','Sodium (mg)','Kcal'];
+  const lines = [headers.join(',')];
+  [...ALL_MEALS].sort((a,b) => a.rankOrder - b.rankOrder || b.protein - a.protein).forEach(m => {
+    lines.push(cols.map(c => {
+      const v = String(m[c] ?? '');
+      return (v.includes(',') || v.includes('"') || v.includes('\n'))
+        ? `"${v.replace(/"/g,'""')}"` : v;
+    }).join(','));
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ucook_nutrition.csv';
+  a.click();
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function fmt(v) { return (v != null && v !== '') ? Number(v).toFixed(1) : '—'; }
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function setStatus(msg) { document.getElementById('statusBar').textContent = msg; }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (!getWorkerUrl()) {
+    document.getElementById('setupBar').style.display = 'flex';
+    setStatus('Enter your Cloudflare Worker URL above to get started.');
+  }
+});
+</script>
+</body>
+</html>
