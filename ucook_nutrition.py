@@ -238,6 +238,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <title>UCook Nutrition Ranker</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #f5f5f0;
@@ -247,87 +248,154 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     height: 100dvh;
     overflow: hidden;
   }
-  .top-bar { flex-shrink: 0; background: #f5f5f0; padding: 14px 20px 0; z-index: 10; }
+
+  /* ── Top bar ── */
+  .top-bar { flex-shrink: 0; background: #f5f5f0; padding: 12px 16px 0; z-index: 10; }
+
   .top-row {
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 8px;
   }
-  h1 { font-size: 1.25rem; font-weight: 700; }
-  .meta { font-size: 0.78rem; color: #999; margin-top: 2px; }
-  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .btn { padding: 7px 14px; border: none; border-radius: 8px; font-size: 0.84rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  h1 { font-size: 1.15rem; font-weight: 700; }
+  .meta { font-size: 0.75rem; color: #999; margin-top: 2px; }
+
+  .controls { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .btn { padding: 8px 14px; border: none; border-radius: 8px; font-size: 0.84rem; font-weight: 600; cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent; }
   .btn-dl { background: #1b5e20; color: white; }
-  .btn-dl:hover { background: #145a1c; }
-  input[type=search] { padding: 7px 11px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.84rem; width: 185px; background: white; }
-  .legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 0.77rem; color: #555; padding: 8px 0 10px; border-bottom: 1px solid #e0e0da; }
+  .btn-dl:active { background: #145a1c; }
+  input[type=search] {
+    padding: 8px 11px; border: 1px solid #ccc; border-radius: 8px;
+    font-size: 0.84rem; width: 175px; background: white;
+    -webkit-appearance: none;
+  }
+
+  /* ── Legend (collapsible on mobile) ── */
+  .legend-wrap { border-bottom: 1px solid #e0e0da; margin-bottom: 0; }
+  .legend-toggle {
+    display: none;
+    width: 100%; padding: 7px 0 8px; background: none; border: none;
+    font-size: 0.78rem; color: #666; text-align: left; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .legend-toggle::after { content: ' ▾'; font-size: 0.7em; }
+  .legend-toggle.open::after { content: ' ▴'; }
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 5px 14px;
+    font-size: 0.76rem; color: #555; padding: 7px 0 9px;
+  }
   .legend-item { display: flex; align-items: center; gap: 5px; }
-  .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.71rem; font-weight: 700; white-space: nowrap; }
+
+  /* ── Badges & flags ── */
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
   .badge-Gold     { background: #ffd700; color: #5a3e00; }
   .badge-Silver   { background: #c8c8c8; color: #333; }
   .badge-Bronze   { background: #cd7f32; color: white; }
   .badge-Unranked { background: #e0e0e0; color: #666; }
-  .flag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; }
+  .flag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.69rem; white-space: nowrap; }
   .flag-warn { background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; }
   .flag-info { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
-  .status-bar { padding: 3px 20px 5px; font-size: 0.78rem; color: #999; flex-shrink: 0; min-height: 22px; }
-  .table-wrap { flex: 1; overflow: auto; }
+
+  /* ── Status bar ── */
+  .status-bar { padding: 3px 16px 4px; font-size: 0.76rem; color: #999; flex-shrink: 0; min-height: 20px; }
+
+  /* ── Table ── */
+  .table-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+
   table { width: 100%; border-collapse: collapse; background: white; font-size: 0.82rem; }
   thead tr { background: #1a1a1a; color: white; }
   th {
-    padding: 10px 11px; text-align: left; white-space: nowrap; user-select: none; cursor: pointer;
-    position: sticky; top: 0; z-index: 2; background: #1a1a1a;
+    padding: 10px 11px; text-align: left; white-space: nowrap;
+    user-select: none; cursor: pointer;
+    position: sticky; top: 0; z-index: 3; background: #1a1a1a;
   }
   th.num { text-align: right; }
-  th:hover { background: #2e2e2e; }
+  th:active { background: #2e2e2e; }
+  @media (hover: hover) { th:hover { background: #2e2e2e; } }
   th.sorted-asc::after  { content: " ▲"; font-size: 0.6em; opacity: 0.75; }
   th.sorted-desc::after { content: " ▼"; font-size: 0.6em; opacity: 0.75; }
   th.secondary-sort { opacity: 0.7; }
   th.secondary-sort::after { content: " ·"; font-size: 0.8em; opacity: 0.5; }
+
+  /* Sticky left columns on mobile */
+  th.col-rank, td.col-rank { position: sticky; left: 0; z-index: 2; background: inherit; }
+  th.col-rank { z-index: 4; }
+  th.col-meal, td.col-meal { position: sticky; left: 52px; z-index: 2; background: inherit; }
+  th.col-meal { z-index: 4; min-width: 160px; max-width: 220px; }
+  td.col-meal { min-width: 160px; max-width: 220px; }
+
+  /* Shadow on sticky cols when scrolled */
+  .table-wrap.scrolled th.col-meal,
+  .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.12); }
+
   td { padding: 9px 11px; border-bottom: 1px solid #f0f0eb; vertical-align: top; }
   tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #fafaf7; }
-  tr.row-Gold     td:first-child { border-left: 3px solid #ffd700; }
-  tr.row-Silver   td:first-child { border-left: 3px solid #c8c8c8; }
-  tr.row-Bronze   td:first-child { border-left: 3px solid #cd7f32; }
-  tr.row-Unranked td:first-child { border-left: 3px solid #e0e0e0; }
+
+  tr.row-Gold     td.col-rank { border-left: 3px solid #ffd700; }
+  tr.row-Silver   td.col-rank { border-left: 3px solid #c8c8c8; }
+  tr.row-Bronze   td.col-rank { border-left: 3px solid #cd7f32; }
+  tr.row-Unranked td.col-rank { border-left: 3px solid #e0e0e0; }
+
   .meal-name { font-weight: 600; line-height: 1.3; }
-  .meal-sub  { font-size: 0.76rem; color: #888; margin-top: 2px; }
+  .meal-sub  { font-size: 0.74rem; color: #888; margin-top: 2px; }
   .flags     { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px; }
-  .meal-link { font-size: 0.73rem; margin-top: 3px; }
+  .meal-link { font-size: 0.72rem; margin-top: 3px; }
   .meal-link a { color: #2e7d32; text-decoration: none; }
-  .meal-link a:hover { text-decoration: underline; }
+  .meal-link a:active { text-decoration: underline; }
+  @media (hover: hover) { .meal-link a:hover { text-decoration: underline; } }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── Mobile overrides ── */
+  @media (max-width: 600px) {
+    .top-bar { padding: 10px 12px 0; }
+    h1 { font-size: 1rem; }
+    input[type=search] { width: 140px; font-size: 0.82rem; }
+    .btn { padding: 8px 11px; font-size: 0.8rem; }
+    .legend-toggle { display: block; }
+    .legend { display: none; padding: 0 0 8px; }
+    .legend.open { display: flex; }
+    .status-bar { padding: 2px 12px 4px; font-size: 0.72rem; }
+    td { padding: 8px 10px; }
+    th { padding: 9px 10px; font-size: 0.78rem; }
+    table { font-size: 0.78rem; }
+  }
 </style>
 </head>
 <body>
+
 <div class="top-bar">
   <div class="top-row">
     <div>
       <h1>UCook Nutrition Ranker</h1>
-      <div class="meta">Per serving · dinner meals only · Updated __DATE__</div>
+      <div class="meta">Per serving · dinner meals · Updated __DATE__</div>
     </div>
     <div class="controls">
-      <input type="search" id="search" placeholder="Search meals, categories…" oninput="renderTable()">
+      <input type="search" id="search" placeholder="Search…" oninput="renderTable()">
       <button class="btn btn-dl" onclick="downloadCSV()">⬇ CSV</button>
     </div>
   </div>
-  <div class="legend">
-    <div class="legend-item"><span class="badge badge-Gold">Gold</span> all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg</div>
-    <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
-    <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
-    <div class="legend-item"><span class="flag flag-warn">⚑ red flag</span> Sodium >1800mg · Sat Fat >20g · Sugar >25g · Protein <35g · Fibre <5g · >1000 kcal</div>
-    <div class="legend-item"><span class="flag flag-info">⚑ info flag</span> Beetroot · Fried · Mushrooms</div>
+  <div class="legend-wrap">
+    <button class="legend-toggle" id="legendToggle" onclick="toggleLegend()">Ranking guide</button>
+    <div class="legend" id="legend">
+      <div class="legend-item"><span class="badge badge-Gold">Gold</span> all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg</div>
+      <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
+      <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
+      <div class="legend-item"><span class="flag flag-warn">⚑ red flag</span> Sodium >1800mg · Sat Fat >20g · Sugar >25g · Protein <35g · Fibre <5g · >1000 kcal</div>
+      <div class="legend-item"><span class="flag flag-info">⚑ info flag</span> Beetroot · Fried · Mushrooms</div>
+    </div>
   </div>
 </div>
+
 <div class="status-bar" id="statusBar"></div>
-<div class="table-wrap">
+
+<div class="table-wrap" id="tableWrap">
   <table>
     <thead>
       <tr>
-        <th onclick="sortBy('rankOrder')" data-col="rankOrder" class="sorted-asc">Rank</th>
+        <th class="col-rank" onclick="sortBy('rankOrder')" data-col="rankOrder" class="sorted-asc">Rank</th>
+        <th class="col-meal" onclick="sortBy('name')" data-col="name">Meal</th>
         <th onclick="sortBy('category')" data-col="category">Category</th>
         <th onclick="sortBy('proteinSource')" data-col="proteinSource">Protein source</th>
-        <th onclick="sortBy('name')" data-col="name">Meal</th>
         <th onclick="sortBy('cookTime')" data-col="cookTime">Cook time</th>
         <th onclick="sortBy('cookWithin')" data-col="cookWithin" class="num">Eat within</th>
         <th onclick="sortBy('protein')" data-col="protein" class="num">Protein (g)</th>
@@ -343,11 +411,24 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     <tbody id="tbody"></tbody>
   </table>
 </div>
+
 <script>
 const RAW = __DATA__;
 const STRING_COLS = new Set(['name','cookTime','category','proteinSource']);
 const DEFAULT_DIR = col => (STRING_COLS.has(col)||col==='rankOrder'||col==='cookWithin') ? 1 : -1;
 let sortStack = [{ col: 'rankOrder', dir: 1 }];
+
+function toggleLegend() {
+  const el = document.getElementById('legend');
+  const btn = document.getElementById('legendToggle');
+  el.classList.toggle('open');
+  btn.classList.toggle('open');
+}
+
+// Shadow on sticky columns when scrolled
+document.getElementById('tableWrap').addEventListener('scroll', function() {
+  this.classList.toggle('scrolled', this.scrollLeft > 4);
+});
 
 function sortBy(col) {
   if (sortStack[0].col===col) { sortStack[0].dir*=-1; }
@@ -375,17 +456,17 @@ function renderTable() {
   });
   document.getElementById('tbody').innerHTML=rows.map(m=>`
     <tr class="row-${m.rank}">
-      <td><span class="badge badge-${m.rank}">${m.rank}</span></td>
-      <td style="white-space:nowrap;font-size:0.78rem;color:#555">${esc(m.category)}</td>
-      <td style="white-space:nowrap;font-size:0.78rem">${esc(m.proteinSource)}</td>
-      <td>
+      <td class="col-rank"><span class="badge badge-${m.rank}">${m.rank}</span></td>
+      <td class="col-meal">
         <div class="meal-name">${esc(m.name)}</div>
         ${m.subTitle?`<div class="meal-sub">${esc(m.subTitle)}</div>`:''}
         ${(m.redFlags.length||m.infoFlags.length)?`<div class="flags">${m.redFlags.map(f=>`<span class="flag flag-warn">⚑ ${esc(f)}</span>`).join('')}${m.infoFlags.map(f=>`<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}</div>`:''}
         <div class="meal-link"><a href="${m.url}" target="_blank">View on UCook ↗</a></div>
       </td>
-      <td style="white-space:nowrap;font-size:0.79rem">${esc(m.cookTime)}</td>
-      <td class="num" style="font-size:0.79rem">${m.cookWithin?m.cookWithin+'d':'—'}</td>
+      <td style="white-space:nowrap;font-size:0.77rem;color:#555">${esc(m.category)}</td>
+      <td style="white-space:nowrap;font-size:0.77rem">${esc(m.proteinSource)}</td>
+      <td style="white-space:nowrap;font-size:0.78rem">${esc(m.cookTime)}</td>
+      <td class="num" style="font-size:0.78rem">${m.cookWithin?m.cookWithin+'d':'—'}</td>
       <td class="num">${fmt(m.protein)}</td>
       <td class="num">${fmt(m.fibre)}</td>
       <td class="num">${fmt(m.fat)}</td>
