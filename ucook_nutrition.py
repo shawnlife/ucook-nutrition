@@ -338,6 +338,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .meal-link a:active { text-decoration: underline; }
   @media (hover: hover) { .meal-link a:hover { text-decoration: underline; } }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .legend-table { border-collapse: collapse; font-size: 0.75rem; margin-top: 6px; width: 100%; max-width: 420px; }
+  .legend-table th, .legend-table td { padding: 3px 10px; border: 1px solid #e0e0da; text-align: center; }
+  .legend-table th { background: #f0f0eb; font-weight: 600; }
+  .legend-table td:first-child { text-align: left; font-weight: 600; }
 
   /* ── Mobile overrides ── */
   @media (max-width: 600px) {
@@ -382,9 +386,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="legend-item"><span class="badge badge-Gold">Gold</span> all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg</div>
       <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
       <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
-      <div class="legend-item"><span class="val-green" style="font-weight:700">green</span> value hits Gold threshold</div>
-      <div class="legend-item"><span class="val-red" style="font-weight:700">red</span> value exceeds warning threshold</div>
-      <div class="legend-item"><span class="flag flag-warn">⚑</span> red flag · <span class="flag flag-info">⚑</span> info flag (Beetroot · Fried · Mushrooms)</div>
+      <div class="legend-item"><span class="flag flag-warn">⚑</span> red flag · <span class="flag flag-info">⚑</span> info flag (Beetroot · Fried · Mushrooms · causes Unranked)</div>
+      <table class="legend-table">
+        <thead><tr><th>Nutrient</th><th class="val-green">Green</th><th>Black</th><th class="val-red">Red</th></tr></thead>
+        <tbody>
+          <tr><td>Protein</td><td class="val-green">≥ 50g</td><td>35–49g</td><td class="val-red">&lt; 35g</td></tr>
+          <tr><td>Fibre</td><td class="val-green">≥ 10g</td><td>5–9g</td><td class="val-red">&lt; 5g</td></tr>
+          <tr><td>Sat Fat</td><td class="val-green">≤ 8g</td><td>9–15g</td><td class="val-red">&gt; 15g</td></tr>
+          <tr><td>Sodium</td><td class="val-green">≤ 800mg</td><td>801–1500mg</td><td class="val-red">&gt; 1500mg</td></tr>
+          <tr><td>Kcal</td><td class="val-green">500–800</td><td>801–1100</td><td class="val-red">&gt; 1100</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -435,20 +447,11 @@ function sortBy(col) {
   renderTable();
 }
 
-// val coloring: higher-is-better → green>=greenOk, red<=redBad
-//               lower-is-better → green<=greenOk, red>=redBad
-function cn(val, greenOk, redBad, lowerBetter) {
-  if (val == null || val === '') return '';
-  const n = Number(val);
-  if (lowerBetter) {
-    if (greenOk != null && n <= greenOk) return ' val-green';
-    if (redBad  != null && n >= redBad)  return ' val-red';
-  } else {
-    if (greenOk != null && n >= greenOk) return ' val-green';
-    if (redBad  != null && n <= redBad)  return ' val-red';
-  }
-  return '';
-}
+function cProtein(v)  { v=Number(v); return v>=50?' val-green':v<35?' val-red':''; }
+function cFibre(v)    { v=Number(v); return v>=10?' val-green':v<5?' val-red':''; }
+function cSatFat(v)   { v=Number(v); return v<=8?' val-green':v>15?' val-red':''; }
+function cSodium(v)   { v=Number(v); return v<=800?' val-green':v>1500?' val-red':''; }
+function cKcal(v)     { v=Number(v); return (v>=500&&v<=800)?' val-green':v>1100?' val-red':''; }
 
 function renderTable() {
   const q=document.getElementById('search').value.toLowerCase();
@@ -483,11 +486,11 @@ function renderTable() {
       <td style="white-space:nowrap;font-size:0.77rem;color:#555">${esc(m.category)}</td>
       <td style="white-space:nowrap;font-size:0.77rem">${esc(m.proteinSource)}</td>
       <td class="num" style="font-size:0.78rem">${m.cookWithin?m.cookWithin+'d':'—'}</td>
-      <td class="num${cn(m.protein,50,35,false)}">${fmt(m.protein)}</td>
-      <td class="num${cn(m.fibre,10,5,false)}">${fmt(m.fibre)}</td>
-      <td class="num${cn(m.saturatedFat,10,20,true)}">${fmt(m.saturatedFat)}</td>
-      <td class="num${cn(m.sodium,1200,1800,true)}">${Math.round(m.sodium)}</td>
-      <td class="num${cn(m.kcal,null,1000,true)}">${Math.round(m.kcal)}</td>
+      <td class="num${cProtein(m.protein)}">${fmt(m.protein)}</td>
+      <td class="num${cFibre(m.fibre)}">${fmt(m.fibre)}</td>
+      <td class="num${cSatFat(m.saturatedFat)}">${fmt(m.saturatedFat)}</td>
+      <td class="num${cSodium(m.sodium)}">${Math.round(m.sodium)}</td>
+      <td class="num${cKcal(m.kcal)}">${Math.round(m.kcal)}</td>
     </tr>`).join('');
   const counts={};
   rows.forEach(m=>counts[m.rank]=(counts[m.rank]||0)+1);
