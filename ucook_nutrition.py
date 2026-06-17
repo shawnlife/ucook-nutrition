@@ -138,16 +138,15 @@ def has_mushrooms(dish):
 def compute_rank(dish, n):
     if has_beetroot(dish) or is_primarily_fried(dish):
         return "Unranked"
-    p  = n.get("protein", 0) or 0
-    f  = n.get("fibre", 0) or 0
-    s  = n.get("saturatedFat", 0) or 0
-    na = n.get("salt", 0) or 0
-    if p >= 50 and f >= 10 and s <= 10 and na <= 1200:
-        return "Gold"
-    if sum([p >= 50, f >= 8,  s <= 13, na <= 1500]) >= 3:
-        return "Silver"
-    if sum([p >= 40, f >= 6,  s <= 15, na <= 1800]) >= 2:
-        return "Bronze"
+    p    = n.get("protein", 0) or 0
+    f    = n.get("fibre", 0) or 0
+    s    = n.get("saturatedFat", 0) or 0
+    na   = n.get("salt", 0) or 0
+    kcal = n.get("energyInKiloCalories", 0) or 0
+    greens = sum([p >= 50, f >= 10, s <= 8, na <= 800, 500 <= kcal <= 800])
+    if greens >= 4: return "Gold"
+    if greens == 3: return "Silver"
+    if greens == 2: return "Bronze"
     return "Unranked"
 
 
@@ -161,12 +160,11 @@ def compute_info_flags(dish):
 
 def compute_red_flags(n, kcal):
     flags = []
-    if (n.get("salt") or 0) > 1800:        flags.append("Sodium >1800mg")
-    if (n.get("saturatedFat") or 0) > 20:  flags.append("Sat Fat >20g")
-    if (n.get("sugars") or 0) > 25:        flags.append("Sugar >25g")
     if (n.get("protein") or 0) < 35:       flags.append("Protein <35g")
     if (n.get("fibre") or 0) < 5:          flags.append("Fibre <5g")
-    if kcal > 1000:                         flags.append(">1000 kcal")
+    if (n.get("saturatedFat") or 0) > 15:  flags.append("Sat Fat >15g")
+    if (n.get("salt") or 0) > 1500:        flags.append("Sodium >1500mg")
+    if kcal > 1100:                         flags.append("Kcal >1100")
     return flags
 
 
@@ -269,10 +267,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     -webkit-appearance: none;
   }
 
-  /* ── Legend (collapsible on mobile) ── */
+  /* ── Legend (always collapsible) ── */
   .legend-wrap { border-bottom: 1px solid #e0e0da; margin-bottom: 0; }
   .legend-toggle {
-    display: none;
+    display: block;
     width: 100%; padding: 7px 0 8px; background: none; border: none;
     font-size: 0.78rem; color: #666; text-align: left; cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -280,9 +278,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .legend-toggle::after { content: ' ▾'; font-size: 0.7em; }
   .legend-toggle.open::after { content: ' ▴'; }
   .legend {
-    display: flex; flex-wrap: wrap; gap: 5px 14px;
-    font-size: 0.76rem; color: #555; padding: 7px 0 9px;
+    display: none; flex-wrap: wrap; gap: 5px 14px;
+    font-size: 0.76rem; color: #555; padding: 0 0 10px;
   }
+  .legend.open { display: flex; }
   .legend-item { display: flex; align-items: center; gap: 5px; }
 
   /* ── Badges & flags ── */
@@ -292,7 +291,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .badge-Bronze   { background: #cd7f32; color: white; }
   .badge-Unranked { background: #e0e0e0; color: #666; }
   .flag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.69rem; white-space: nowrap; }
-  .flag-warn { background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; }
+  .flag-warn { background: #ffebee; border: 1px solid #c62828; color: #c62828; font-weight: 600; }
   .flag-info { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
 
   /* ── Status bar ── */
@@ -349,9 +348,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     h1 { font-size: 1rem; }
     input[type=search] { width: 140px; font-size: 0.82rem; }
     .btn { padding: 8px 11px; font-size: 0.8rem; }
-    .legend-toggle { display: block; }
-    .legend { display: none; padding: 0 0 8px; }
-    .legend.open { display: flex; }
     .status-bar { padding: 2px 14px 4px; font-size: 0.72rem; }
     td { padding: 8px 12px; }
     th { padding: 9px 12px; font-size: 0.78rem; }
@@ -383,10 +379,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <div class="legend-wrap">
     <button class="legend-toggle" id="legendToggle" onclick="toggleLegend()">Ranking guide</button>
     <div class="legend" id="legend">
-      <div class="legend-item"><span class="badge badge-Gold">Gold</span> all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg</div>
-      <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
-      <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
-      <div class="legend-item"><span class="flag flag-warn">⚑</span> red flag · <span class="flag flag-info">⚑</span> info flag (Beetroot · Fried · Mushrooms · causes Unranked)</div>
+      <div class="legend-item"><span class="badge badge-Gold">Gold</span> 4–5 green values out of 5 nutrients</div>
+      <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 green values out of 5 nutrients</div>
+      <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 green values out of 5 nutrients</div>
+      <div class="legend-item"><span class="badge badge-Unranked">NR</span> 0–1 green values, or meal contains beetroot / is primarily fried</div>
+      <div class="legend-item"><span class="flag flag-warn">⚑ red flag</span> a value is in the red zone · <span class="flag flag-info">⚑ info</span> Beetroot · Fried · Mushrooms</div>
       <table class="legend-table">
         <thead><tr><th>Nutrient</th><th class="val-green">Green</th><th>Black</th><th class="val-red">Red</th></tr></thead>
         <tbody>
