@@ -67,7 +67,7 @@
   .status-bar { padding: 3px 24px 4px; font-size: 0.76rem; color: #999; flex-shrink: 0; min-height: 20px; }
 
   /* ── Table ── */
-  .table-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; overflow-x: hidden; }
+  .table-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; overflow-x: hidden; padding: 0 20px; }
 
   table { width: 100%; border-collapse: collapse; background: white; font-size: 0.82rem; }
   thead tr { background: #1a1a1a; color: white; }
@@ -85,8 +85,7 @@
   th.secondary-sort::after { content: " ·"; font-size: 0.8em; opacity: 0.5; }
 
   /* Desktop: rank col has fixed width, no horizontal scroll needed */
-  th.col-rank { min-width: 86px; }
-  th.col-meal { min-width: 200px; }
+  th.col-rank { min-width: 64px; }
 
   td { padding: 10px 16px; border-bottom: 1px solid #f0f0eb; vertical-align: top; }
   .val-green { color: #2e7d32; font-weight: 700; }
@@ -122,10 +121,10 @@
     th { padding: 9px 12px; font-size: 0.78rem; }
     table { font-size: 0.78rem; }
     /* Re-enable horizontal scroll on mobile with sticky left cols */
-    .table-wrap { overflow-x: auto; }
+    .table-wrap { overflow-x: auto; padding: 0; }
     th.col-rank, td.col-rank { position: sticky; left: 0; z-index: 2; background: inherit; }
-    th.col-rank { z-index: 4; }
-    th.col-meal, td.col-meal { position: sticky; left: 86px; z-index: 2; background: inherit; }
+    th.col-rank { z-index: 4; min-width: 52px; }
+    th.col-meal, td.col-meal { position: sticky; left: 60px; z-index: 2; background: inherit; min-width: 140px; max-width: 160px; }
     th.col-meal { z-index: 4; }
     .table-wrap.scrolled th.col-meal,
     .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.12); }
@@ -151,8 +150,8 @@
       <div class="legend-item"><span class="badge badge-Gold">Gold</span> all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg</div>
       <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
       <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
-      <div class="legend-item"><span class="val-green" style="font-weight:700">green</span> value hits Gold threshold (Protein ≥50g · Fibre ≥10g · Sat Fat ≤10g · Sodium ≤1200mg)</div>
-      <div class="legend-item"><span class="val-red" style="font-weight:700">red</span> value exceeds warning threshold (Protein <35g · Fibre <5g · Sat Fat >20g · Sodium >1800mg · >1000 kcal)</div>
+      <div class="legend-item"><span class="val-green" style="font-weight:700">green</span> value hits Gold threshold</div>
+      <div class="legend-item"><span class="val-red" style="font-weight:700">red</span> value exceeds warning threshold</div>
       <div class="legend-item"><span class="flag flag-warn">⚑</span> red flag · <span class="flag flag-info">⚑</span> info flag (Beetroot · Fried · Mushrooms)</div>
     </div>
   </div>
@@ -242,7 +241,7 @@ function renderTable() {
   });
   document.getElementById('tbody').innerHTML=rows.map(m=>`
     <tr class="row-${m.rank}">
-      <td class="col-rank"><span class="badge badge-${m.rank}">${m.rank}</span></td>
+      <td class="col-rank"><span class="badge badge-${m.rank}">${m.rank==='Unranked'?'NR':m.rank}</span></td>
       <td class="col-meal">
         <div class="meal-name">${esc(m.name)}</div>
         ${m.subTitle?`<div class="meal-sub">${esc(m.subTitle)}</div>`:''}
@@ -256,7 +255,7 @@ function renderTable() {
       <td class="num${cn(m.fibre,10,5,false)}">${fmt(m.fibre)}</td>
       <td class="num${cn(m.saturatedFat,10,20,true)}">${fmt(m.saturatedFat)}</td>
       <td class="num${cn(m.sodium,1200,1800,true)}">${Math.round(m.sodium)}</td>
-      <td class="num${cn(m.kcal,null,1000,false)}">${Math.round(m.kcal)}</td>
+      <td class="num${cn(m.kcal,null,1000,true)}">${Math.round(m.kcal)}</td>
     </tr>`).join('');
   const counts={};
   rows.forEach(m=>counts[m.rank]=(counts[m.rank]||0)+1);
