@@ -144,13 +144,19 @@ def compute_rank(dish, n):
     na   = n.get("salt", 0) or 0
     kcal = n.get("energyInKiloCalories", 0) or 0
     greens = sum([p >= 50, f >= 10, s <= 8, na <= 800, 500 <= kcal <= 800])
-    # Protein ≥40g is required to reach Silver or Gold
-    if p < 40:
-        return "Bronze" if greens >= 2 else "Unranked"
-    if greens >= 4: return "Gold"
-    if greens == 3: return "Silver"
-    if greens == 2: return "Bronze"
-    return "Unranked"
+    reds  = sum([p < 35, f < 5, s > 15, na > 1500, kcal > 1100])
+    if greens >= 3 and reds == 0:
+        rank = "Gold"
+    elif (greens >= 2 and reds == 0) or (greens >= 3 and reds <= 1):
+        rank = "Silver"
+    elif greens >= 1 and reds <= 1:
+        rank = "Bronze"
+    else:
+        rank = "Unranked"
+    # Protein ≥40g required for Silver or Gold
+    if rank in ("Gold", "Silver") and p < 40:
+        rank = "Bronze"
+    return rank
 
 
 def compute_info_flags(dish):
@@ -389,10 +395,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <div class="legend-wrap">
     <button class="legend-toggle" id="legendToggle" onclick="toggleLegend()">Ranking guide <span class="arrow">▾</span></button>
     <div class="legend" id="legend">
-      <div class="legend-item"><span class="badge badge-Gold">Gold</span> 4–5 green values out of 5 nutrients</div>
-      <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 green values out of 5 nutrients</div>
-      <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 green values out of 5 nutrients</div>
-      <div class="legend-item"><span class="badge badge-Unranked">NR</span> 0–1 green values, or meal contains beetroot / is primarily fried</div>
+      <div class="legend-item"><span class="badge badge-Gold">Gold</span> ≥3 greens, 0 reds, protein ≥40g</div>
+      <div class="legend-item"><span class="badge badge-Silver">Silver</span> (≥2 greens, 0 reds) or (≥3 greens, 1 red) — protein ≥40g</div>
+      <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> ≥1 green, ≤1 red (or protein &lt;40g drops Gold/Silver here)</div>
+      <div class="legend-item"><span class="badge badge-Unranked">NR</span> 2+ reds, or contains beetroot / primarily fried</div>
       <div class="legend-item"><span class="flag flag-warn">⚑ red flag</span> a value is in the red zone · <span class="flag flag-info">⚑ info</span> Beetroot · Fried · Mushrooms</div>
       <div class="legend-table-wrap">
         <table class="legend-table">
