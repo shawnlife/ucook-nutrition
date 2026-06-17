@@ -299,7 +299,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .status-bar { padding: 3px 24px 4px; font-size: 0.76rem; color: #999; flex-shrink: 0; min-height: 20px; }
 
   /* ── Table ── */
-  .table-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
+  .table-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; overflow-x: hidden; }
 
   table { width: 100%; border-collapse: collapse; background: white; font-size: 0.82rem; }
   thead tr { background: #1a1a1a; color: white; }
@@ -316,16 +316,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   th.secondary-sort { opacity: 0.7; }
   th.secondary-sort::after { content: " ·"; font-size: 0.8em; opacity: 0.5; }
 
-  /* Sticky left columns on mobile */
-  th.col-rank, td.col-rank { position: sticky; left: 0; z-index: 2; background: inherit; }
-  th.col-rank { z-index: 4; }
-  th.col-meal, td.col-meal { position: sticky; left: 52px; z-index: 2; background: inherit; }
-  th.col-meal { z-index: 4; min-width: 160px; max-width: 220px; }
-  td.col-meal { min-width: 160px; max-width: 220px; }
-
-  /* Shadow on sticky cols when scrolled */
-  .table-wrap.scrolled th.col-meal,
-  .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.12); }
+  /* Desktop: rank col has fixed width, no horizontal scroll needed */
+  th.col-rank { min-width: 86px; }
+  th.col-meal { min-width: 200px; }
 
   td { padding: 10px 16px; border-bottom: 1px solid #f0f0eb; vertical-align: top; }
   .val-green { color: #2e7d32; font-weight: 700; }
@@ -360,6 +353,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     td { padding: 8px 12px; }
     th { padding: 9px 12px; font-size: 0.78rem; }
     table { font-size: 0.78rem; }
+    /* Re-enable horizontal scroll on mobile with sticky left cols */
+    .table-wrap { overflow-x: auto; }
+    th.col-rank, td.col-rank { position: sticky; left: 0; z-index: 2; background: inherit; }
+    th.col-rank { z-index: 4; }
+    th.col-meal, td.col-meal { position: sticky; left: 86px; z-index: 2; background: inherit; }
+    th.col-meal { z-index: 4; }
+    .table-wrap.scrolled th.col-meal,
+    .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.12); }
   }
 </style>
 </head>
@@ -383,8 +384,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
       <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
       <div class="legend-item"><span class="val-green" style="font-weight:700">green</span> value hits Gold threshold (Protein ≥50g · Fibre ≥10g · Sat Fat ≤10g · Sodium ≤1200mg)</div>
-      <div class="legend-item"><span class="val-red" style="font-weight:700">red</span> value exceeds warning threshold (Sodium >1800mg · Sat Fat >20g · Sugar >25g · Protein <35g · Fibre <5g · >1000 kcal)</div>
-      <div class="legend-item"><span class="flag flag-info">⚑ info flag</span> Beetroot · Fried · Mushrooms (causes Unranked)</div>
+      <div class="legend-item"><span class="val-red" style="font-weight:700">red</span> value exceeds warning threshold (Protein <35g · Fibre <5g · Sat Fat >20g · Sodium >1800mg · >1000 kcal)</div>
+      <div class="legend-item"><span class="flag flag-warn">⚑</span> red flag · <span class="flag flag-info">⚑</span> info flag (Beetroot · Fried · Mushrooms)</div>
     </div>
   </div>
 </div>
@@ -399,14 +400,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <th class="col-meal" onclick="sortBy('name')" data-col="name">Meal</th>
         <th onclick="sortBy('category')" data-col="category">Category</th>
         <th onclick="sortBy('proteinSource')" data-col="proteinSource">Protein source</th>
-        <th onclick="sortBy('cookTime')" data-col="cookTime">Cook time</th>
         <th onclick="sortBy('cookWithin')" data-col="cookWithin" class="num">Eat within</th>
         <th onclick="sortBy('protein')" data-col="protein" class="num">Protein (g)</th>
         <th onclick="sortBy('fibre')" data-col="fibre" class="num">Fibre (g)</th>
-        <th onclick="sortBy('fat')" data-col="fat" class="num">Fat (g)</th>
         <th onclick="sortBy('saturatedFat')" data-col="saturatedFat" class="num">Sat Fat (g)</th>
-        <th onclick="sortBy('carbs')" data-col="carbs" class="num">Carbs (g)</th>
-        <th onclick="sortBy('sugars')" data-col="sugars" class="num">Sugars (g)</th>
         <th onclick="sortBy('sodium')" data-col="sodium" class="num">Sodium (mg)</th>
         <th onclick="sortBy('kcal')" data-col="kcal" class="num">Kcal</th>
       </tr>
@@ -417,7 +414,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
 <script>
 const RAW = __DATA__;
-const STRING_COLS = new Set(['name','cookTime','category','proteinSource']);
+const STRING_COLS = new Set(['name','category','proteinSource']);
 const DEFAULT_DIR = col => (STRING_COLS.has(col)||col==='rankOrder'||col==='cookWithin') ? 1 : -1;
 let sortStack = [{ col: 'rankOrder', dir: 1 }];
 
@@ -481,19 +478,15 @@ function renderTable() {
       <td class="col-meal">
         <div class="meal-name">${esc(m.name)}</div>
         ${m.subTitle?`<div class="meal-sub">${esc(m.subTitle)}</div>`:''}
-        ${m.infoFlags.length?`<div class="flags">${m.infoFlags.map(f=>`<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}</div>`:''}
+        ${(m.redFlags.length||m.infoFlags.length)?`<div class="flags">${m.redFlags.map(f=>`<span class="flag flag-warn">⚑ ${esc(f)}</span>`).join('')}${m.infoFlags.map(f=>`<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}</div>`:''}
         <div class="meal-link"><a href="${m.url}" target="_blank">View on UCook ↗</a></div>
       </td>
       <td style="white-space:nowrap;font-size:0.77rem;color:#555">${esc(m.category)}</td>
       <td style="white-space:nowrap;font-size:0.77rem">${esc(m.proteinSource)}</td>
-      <td style="white-space:nowrap;font-size:0.78rem">${esc(m.cookTime)}</td>
       <td class="num" style="font-size:0.78rem">${m.cookWithin?m.cookWithin+'d':'—'}</td>
       <td class="num${cn(m.protein,50,35,false)}">${fmt(m.protein)}</td>
       <td class="num${cn(m.fibre,10,5,false)}">${fmt(m.fibre)}</td>
-      <td class="num">${fmt(m.fat)}</td>
       <td class="num${cn(m.saturatedFat,10,20,true)}">${fmt(m.saturatedFat)}</td>
-      <td class="num">${fmt(m.carbs)}</td>
-      <td class="num${cn(m.sugars,null,25,false)}">${fmt(m.sugars)}</td>
       <td class="num${cn(m.sodium,1200,1800,true)}">${Math.round(m.sodium)}</td>
       <td class="num${cn(m.kcal,null,1000,false)}">${Math.round(m.kcal)}</td>
     </tr>`).join('');
@@ -504,8 +497,8 @@ function renderTable() {
 }
 
 function downloadCSV() {
-  const cols=['rank','category','proteinSource','name','subTitle','url','cookTime','cookWithin','protein','fibre','fat','saturatedFat','carbs','sugars','sodium','kcal'];
-  const headers=['Rank','Category','Protein Source','Name','Sub-title','URL','Cook Time','Eat Within (days)','Protein (g)','Fibre (g)','Fat (g)','Sat Fat (g)','Carbs (g)','Sugars (g)','Sodium (mg)','Kcal'];
+  const cols=['rank','category','proteinSource','name','subTitle','url','cookWithin','protein','fibre','saturatedFat','sodium','kcal'];
+  const headers=['Rank','Category','Protein Source','Name','Sub-title','URL','Eat Within (days)','Protein (g)','Fibre (g)','Sat Fat (g)','Sodium (mg)','Kcal'];
   const lines=[headers.join(',')];
   [...RAW].sort((a,b)=>a.rankOrder-b.rankOrder||b.protein-a.protein).forEach(m=>{
     lines.push(cols.map(c=>{const v=String(m[c]??'');return(v.includes(',')||v.includes('"')||v.includes('\n'))?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(','));
