@@ -144,6 +144,9 @@ def compute_rank(dish, n):
     na   = n.get("salt", 0) or 0
     kcal = n.get("energyInKiloCalories", 0) or 0
     greens = sum([p >= 50, f >= 10, s <= 8, na <= 800, 500 <= kcal <= 800])
+    # Protein ≥40g is required to reach Silver or Gold
+    if p < 40:
+        return "Bronze" if greens >= 2 else "Unranked"
     if greens >= 4: return "Gold"
     if greens == 3: return "Silver"
     if greens == 2: return "Bronze"
@@ -270,13 +273,13 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   /* ── Legend (always collapsible) ── */
   .legend-wrap { border-bottom: 1px solid #e0e0da; margin-bottom: 0; }
   .legend-toggle {
-    display: block;
-    width: 100%; padding: 7px 0 8px; background: none; border: none;
-    font-size: 0.78rem; color: #666; text-align: left; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px 6px 0; background: none; border: none;
+    font-size: 0.82rem; font-weight: 600; color: #333; cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
-  .legend-toggle::after { content: ' ▾'; font-size: 0.7em; }
-  .legend-toggle.open::after { content: ' ▴'; }
+  .legend-toggle .arrow { font-size: 1.1rem; line-height: 1; transition: transform 0.15s; display: inline-block; }
+  .legend-toggle.open .arrow { transform: rotate(180deg); }
   .legend {
     display: none; flex-wrap: wrap; gap: 5px 14px;
     font-size: 0.76rem; color: #555; padding: 0 0 10px;
@@ -323,6 +326,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .val-red   { color: #c62828; font-weight: 700; }
   tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #fafaf7; }
+  tbody tr:hover td.col-rank,
+  tbody tr:hover td.col-meal { background: #fafaf7; }
 
   tr.row-Gold     td.col-rank { border-left: 3px solid #ffd700; }
   tr.row-Silver   td.col-rank { border-left: 3px solid #c8c8c8; }
@@ -337,10 +342,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .meal-link a:active { text-decoration: underline; }
   @media (hover: hover) { .meal-link a:hover { text-decoration: underline; } }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .legend-table { border-collapse: collapse; font-size: 0.75rem; margin-top: 6px; width: 100%; max-width: 420px; }
-  .legend-table th, .legend-table td { padding: 3px 10px; border: 1px solid #e0e0da; text-align: center; }
+  .legend-table-wrap { width: 100%; margin-top: 10px; }
+  .legend-table { border-collapse: collapse; font-size: 0.75rem; max-width: 380px; }
+  .legend-table th, .legend-table td { padding: 4px 12px; border: 1px solid #e0e0da; text-align: center; }
   .legend-table th { background: #f0f0eb; font-weight: 600; }
   .legend-table td:first-child { text-align: left; font-weight: 600; }
+  .scroll-hint { display: none; }
 
   /* ── Mobile overrides ── */
   @media (max-width: 600px) {
@@ -354,12 +361,15 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     table { font-size: 0.78rem; }
     /* Re-enable horizontal scroll on mobile with sticky left cols */
     .table-wrap { overflow-x: auto; padding: 0; }
-    th.col-rank, td.col-rank { position: sticky; left: 0; z-index: 2; background: inherit; }
-    th.col-rank { z-index: 4; min-width: 52px; }
-    th.col-meal, td.col-meal { position: sticky; left: 60px; z-index: 2; background: inherit; min-width: 140px; max-width: 160px; }
-    th.col-meal { z-index: 4; }
+    th.col-rank { position: sticky; left: 0; z-index: 4; background: #1a1a1a; min-width: 52px; }
+    td.col-rank { position: sticky; left: 0; z-index: 2; background: white; }
+    tbody tr:hover td.col-rank { background: #fafaf7; }
+    th.col-meal { position: sticky; left: 60px; z-index: 4; background: #1a1a1a; min-width: 140px; max-width: 160px; }
+    td.col-meal { position: sticky; left: 60px; z-index: 2; background: white; min-width: 140px; max-width: 160px; }
+    tbody tr:hover td.col-meal { background: #fafaf7; }
     .table-wrap.scrolled th.col-meal,
-    .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.12); }
+    .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.18); }
+    .scroll-hint { display: block; text-align: center; font-size: 0.72rem; color: #aaa; padding: 5px 0 2px; letter-spacing: 0.03em; }
   }
 </style>
 </head>
@@ -377,28 +387,31 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     </div>
   </div>
   <div class="legend-wrap">
-    <button class="legend-toggle" id="legendToggle" onclick="toggleLegend()">Ranking guide</button>
+    <button class="legend-toggle" id="legendToggle" onclick="toggleLegend()">Ranking guide <span class="arrow">▾</span></button>
     <div class="legend" id="legend">
       <div class="legend-item"><span class="badge badge-Gold">Gold</span> 4–5 green values out of 5 nutrients</div>
       <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 green values out of 5 nutrients</div>
       <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 green values out of 5 nutrients</div>
       <div class="legend-item"><span class="badge badge-Unranked">NR</span> 0–1 green values, or meal contains beetroot / is primarily fried</div>
       <div class="legend-item"><span class="flag flag-warn">⚑ red flag</span> a value is in the red zone · <span class="flag flag-info">⚑ info</span> Beetroot · Fried · Mushrooms</div>
-      <table class="legend-table">
-        <thead><tr><th>Nutrient</th><th class="val-green">Green</th><th>Black</th><th class="val-red">Red</th></tr></thead>
-        <tbody>
-          <tr><td>Protein</td><td class="val-green">≥ 50g</td><td>35–49g</td><td class="val-red">&lt; 35g</td></tr>
-          <tr><td>Fibre</td><td class="val-green">≥ 10g</td><td>5–9g</td><td class="val-red">&lt; 5g</td></tr>
-          <tr><td>Sat Fat</td><td class="val-green">≤ 8g</td><td>9–15g</td><td class="val-red">&gt; 15g</td></tr>
-          <tr><td>Sodium</td><td class="val-green">≤ 800mg</td><td>801–1500mg</td><td class="val-red">&gt; 1500mg</td></tr>
-          <tr><td>Kcal</td><td class="val-green">500–800</td><td>801–1100</td><td class="val-red">&gt; 1100</td></tr>
-        </tbody>
-      </table>
+      <div class="legend-table-wrap">
+        <table class="legend-table">
+          <thead><tr><th>Nutrient</th><th class="val-green">Green ✓</th><th>Black</th><th class="val-red">Red ✗</th></tr></thead>
+          <tbody>
+            <tr><td>Protein</td><td class="val-green">≥ 50g</td><td>35–49g</td><td class="val-red">&lt; 35g</td></tr>
+            <tr><td>Fibre</td><td class="val-green">≥ 10g</td><td>5–9g</td><td class="val-red">&lt; 5g</td></tr>
+            <tr><td>Sat Fat</td><td class="val-green">≤ 8g</td><td>9–15g</td><td class="val-red">&gt; 15g</td></tr>
+            <tr><td>Sodium</td><td class="val-green">≤ 800mg</td><td>801–1500mg</td><td class="val-red">&gt; 1500mg</td></tr>
+            <tr><td>Kcal</td><td class="val-green">500–800</td><td>801–1100</td><td class="val-red">&gt; 1100</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
 
 <div class="status-bar" id="statusBar"></div>
+<div class="scroll-hint" id="scrollHint">← swipe to see all columns →</div>
 
 <div class="table-wrap" id="tableWrap">
   <table>
@@ -433,9 +446,13 @@ function toggleLegend() {
   btn.classList.toggle('open');
 }
 
-// Shadow on sticky columns when scrolled
+// Shadow on sticky columns when scrolled; hide scroll hint after first swipe
 document.getElementById('tableWrap').addEventListener('scroll', function() {
   this.classList.toggle('scrolled', this.scrollLeft > 4);
+  if (this.scrollLeft > 10) {
+    const hint = document.getElementById('scrollHint');
+    if (hint) hint.style.display = 'none';
+  }
 });
 
 function sortBy(col) {
