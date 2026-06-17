@@ -6,7 +6,6 @@
 <title>UCook Nutrition Ranker</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #f5f5f0;
@@ -16,239 +15,81 @@
     height: 100dvh;
     overflow: hidden;
   }
-
-  /* ── Sticky top bar ── */
-  .top-bar {
-    flex-shrink: 0;
-    background: #f5f5f0;
-    padding: 16px 20px 0;
-    z-index: 10;
-  }
-
+  .top-bar { flex-shrink: 0; background: #f5f5f0; padding: 14px 20px 0; z-index: 10; }
   .top-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
   }
-
-  h1 { font-size: 1.3rem; font-weight: 700; }
-  .meta { font-size: 0.8rem; color: #999; margin-top: 2px; }
-
+  h1 { font-size: 1.25rem; font-weight: 700; }
+  .meta { font-size: 0.78rem; color: #999; margin-top: 2px; }
   .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-
-  .btn {
-    padding: 7px 14px;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-  .btn-fetch { background: #1b5e20; color: white; }
-  .btn-fetch:hover { background: #145a1c; }
-  .btn-fetch:disabled { background: #a5d6a7; cursor: not-allowed; }
-  .btn-dl { background: #e8e8e3; color: #333; }
-  .btn-dl:hover { background: #ddddd8; }
-  .btn-dl:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  input[type=search] {
-    padding: 7px 11px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    width: 185px;
-    background: white;
-  }
-
-  /* ── Legend ── */
-  .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 16px;
-    font-size: 0.78rem;
-    color: #555;
-    padding: 8px 0 10px;
-    border-bottom: 1px solid #e0e0da;
-    margin-bottom: 0;
-  }
+  .btn { padding: 7px 14px; border: none; border-radius: 8px; font-size: 0.84rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn-dl { background: #1b5e20; color: white; }
+  .btn-dl:hover { background: #145a1c; }
+  input[type=search] { padding: 7px 11px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.84rem; width: 185px; background: white; }
+  .legend { display: flex; flex-wrap: wrap; gap: 5px 14px; font-size: 0.77rem; color: #555; padding: 8px 0 10px; border-bottom: 1px solid #e0e0da; }
   .legend-item { display: flex; align-items: center; gap: 5px; }
-
-  .badge {
-    display: inline-block;
-    padding: 2px 7px;
-    border-radius: 10px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    white-space: nowrap;
-  }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 0.71rem; font-weight: 700; white-space: nowrap; }
   .badge-Gold     { background: #ffd700; color: #5a3e00; }
   .badge-Silver   { background: #c8c8c8; color: #333; }
   .badge-Bronze   { background: #cd7f32; color: white; }
   .badge-Unranked { background: #e0e0e0; color: #666; }
-
-  /* ── Table scroll container ── */
-  .table-wrap {
-    flex: 1;
-    overflow: auto;
-    margin-top: 0;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    font-size: 0.83rem;
-  }
-
-  thead tr {
-    background: #1a1a1a;
-    color: white;
-  }
-
+  .flag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; white-space: nowrap; }
+  .flag-warn { background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; }
+  .flag-info { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
+  .status-bar { padding: 3px 20px 5px; font-size: 0.78rem; color: #999; flex-shrink: 0; min-height: 22px; }
+  .table-wrap { flex: 1; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; background: white; font-size: 0.82rem; }
+  thead tr { background: #1a1a1a; color: white; }
   th {
-    padding: 10px 11px;
-    text-align: left;
-    white-space: nowrap;
-    user-select: none;
-    cursor: pointer;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: #1a1a1a;
+    padding: 10px 11px; text-align: left; white-space: nowrap; user-select: none; cursor: pointer;
+    position: sticky; top: 0; z-index: 2; background: #1a1a1a;
   }
   th.num { text-align: right; }
   th:hover { background: #2e2e2e; }
   th.sorted-asc::after  { content: " ▲"; font-size: 0.6em; opacity: 0.75; }
   th.sorted-desc::after { content: " ▼"; font-size: 0.6em; opacity: 0.75; }
-  th.secondary-sort::after { content: " ·"; font-size: 0.8em; opacity: 0.4; }
-
-  td {
-    padding: 9px 11px;
-    border-bottom: 1px solid #f0f0eb;
-    vertical-align: top;
-  }
+  th.secondary-sort { opacity: 0.7; }
+  th.secondary-sort::after { content: " ·"; font-size: 0.8em; opacity: 0.5; }
+  td { padding: 9px 11px; border-bottom: 1px solid #f0f0eb; vertical-align: top; }
   tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #fafaf7; }
-
   tr.row-Gold     td:first-child { border-left: 3px solid #ffd700; }
   tr.row-Silver   td:first-child { border-left: 3px solid #c8c8c8; }
   tr.row-Bronze   td:first-child { border-left: 3px solid #cd7f32; }
   tr.row-Unranked td:first-child { border-left: 3px solid #e0e0e0; }
-
   .meal-name { font-weight: 600; line-height: 1.3; }
-  .meal-sub  { font-size: 0.77rem; color: #888; margin-top: 2px; }
-  .meal-link { font-size: 0.74rem; margin-top: 3px; }
+  .meal-sub  { font-size: 0.76rem; color: #888; margin-top: 2px; }
+  .flags     { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px; }
+  .meal-link { font-size: 0.73rem; margin-top: 3px; }
   .meal-link a { color: #2e7d32; text-decoration: none; }
   .meal-link a:hover { text-decoration: underline; }
-
-  .flags { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px; }
-  .flag {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 0.71rem;
-    white-space: nowrap;
-  }
-  .flag-warn { background: #ffebee; border: 1px solid #ef9a9a; color: #c62828; }
-  .flag-info { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
-
   .num { text-align: right; font-variant-numeric: tabular-nums; }
-
-  /* ── Status / empty states ── */
-  .status-bar {
-    padding: 4px 20px 6px;
-    font-size: 0.8rem;
-    color: #999;
-    flex-shrink: 0;
-    min-height: 24px;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #aaa;
-    font-size: 0.95rem;
-  }
-  .empty-state p { margin-top: 8px; font-size: 0.83rem; }
-
-  /* ── Worker URL setup ── */
-  .setup-bar {
-    background: #fffde7;
-    border-bottom: 1px solid #ffe082;
-    padding: 8px 20px;
-    font-size: 0.82rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    flex-shrink: 0;
-  }
-  .setup-bar input {
-    flex: 1;
-    min-width: 240px;
-    padding: 5px 9px;
-    border: 1px solid #ffd54f;
-    border-radius: 6px;
-    font-size: 0.82rem;
-    background: white;
-  }
-  .btn-save { background: #f9a825; color: white; }
-  .btn-save:hover { background: #f57f17; }
 </style>
 </head>
 <body>
-
 <div class="top-bar">
   <div class="top-row">
     <div>
       <h1>UCook Nutrition Ranker</h1>
-      <div class="meta" id="meta">Per serving · dinner meals only</div>
+      <div class="meta">Per serving · dinner meals only · Updated 17 June 2026</div>
     </div>
     <div class="controls">
-      <input type="search" id="search" placeholder="Search meals…" oninput="renderTable()" disabled>
-      <button class="btn btn-dl" id="btnDl" onclick="downloadCSV()" disabled>⬇ CSV</button>
-      <button class="btn btn-fetch" id="btnFetch" onclick="loadMeals()">Load this week's meals</button>
+      <input type="search" id="search" placeholder="Search meals, categories…" oninput="renderTable()">
+      <button class="btn btn-dl" onclick="downloadCSV()">⬇ CSV</button>
     </div>
   </div>
-
   <div class="legend">
-    <div class="legend-item">
-      <span class="badge badge-Gold">Gold</span>
-      all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg
-    </div>
-    <div class="legend-item">
-      <span class="badge badge-Silver">Silver</span>
-      3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg
-    </div>
-    <div class="legend-item">
-      <span class="badge badge-Bronze">Bronze</span>
-      2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg
-    </div>
-    <div class="legend-item" style="color:#c62828">
-      <span class="flag flag-warn">⚑ red flag</span>
-      Sodium &gt;1800mg · Sat Fat &gt;20g · Sugar &gt;25g · Protein &lt;35g · Fibre &lt;5g · &gt;1000 kcal
-    </div>
-    <div class="legend-item" style="color:#e65100">
-      <span class="flag flag-info">⚑ info flag</span>
-      Beetroot · Fried · Mushrooms
-    </div>
+    <div class="legend-item"><span class="badge badge-Gold">Gold</span> all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg</div>
+    <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
+    <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
+    <div class="legend-item"><span class="flag flag-warn">⚑ red flag</span> Sodium >1800mg · Sat Fat >20g · Sugar >25g · Protein <35g · Fibre <5g · >1000 kcal</div>
+    <div class="legend-item"><span class="flag flag-info">⚑ info flag</span> Beetroot · Fried · Mushrooms</div>
   </div>
 </div>
-
-<div class="setup-bar" id="setupBar" style="display:none">
-  ⚙️ Enter your Cloudflare Worker URL to connect:
-  <input type="url" id="workerInput" placeholder="https://your-worker.workers.dev">
-  <button class="btn btn-save" onclick="saveWorkerUrl()">Save</button>
-</div>
-
 <div class="status-bar" id="statusBar"></div>
-
 <div class="table-wrap">
-  <table id="tbl" style="display:none">
+  <table>
     <thead>
       <tr>
         <th onclick="sortBy('rankOrder')" data-col="rankOrder" class="sorted-asc">Rank</th>
@@ -269,297 +110,50 @@
     </thead>
     <tbody id="tbody"></tbody>
   </table>
-  <div class="empty-state" id="emptyState">
-    <div>Click <strong>Load this week's meals</strong> to fetch the current UCook menu.</div>
-  </div>
 </div>
-
 <script>
-// ── Config ──────────────────────────────────────────────────────────────────
-const WORKER_STORAGE_KEY = 'ucook_worker_url';
-
-function getWorkerUrl() {
-  return localStorage.getItem(WORKER_STORAGE_KEY) || '';
-}
-
-function saveWorkerUrl() {
-  const url = document.getElementById('workerInput').value.trim().replace(/\/$/, '');
-  if (!url) return;
-  localStorage.setItem(WORKER_STORAGE_KEY, url);
-  document.getElementById('setupBar').style.display = 'none';
-  setStatus('Worker URL saved. Loading meals…');
-  loadMeals();
-}
-
-// ── GraphQL ──────────────────────────────────────────────────────────────────
-const MENU_QUERY = `{ activeMenu { menuDishes { list { id name slug } } } }`;
-
-const DISH_QUERY = `
-query GetDish($slug: String!) {
-  oneMealKitDish(slug: $slug, status: [PUBLISHED]) {
-    name subTitle slug description
-    cookWithin
-    overallTime { min max }
-    sentIngredients
-    mealKitCategories { title }
-    nutritionPerServing {
-      protein fibre fat saturatedFat carbs sugars salt energyInKiloCalories
-    }
-  }
-}`;
-
-async function gql(query, variables) {
-  const url = getWorkerUrl();
-  if (!url) throw new Error('NO_WORKER');
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables }),
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
-
-// ── Data loading ──────────────────────────────────────────────────────────────
-let ALL_MEALS = [];
-
-async function loadMeals() {
-  const workerUrl = getWorkerUrl();
-  if (!workerUrl) {
-    document.getElementById('setupBar').style.display = 'flex';
-    document.getElementById('workerInput').value = workerUrl;
-    setStatus('Enter your Cloudflare Worker URL above to get started.');
-    return;
-  }
-
-  const btn = document.getElementById('btnFetch');
-  btn.disabled = true;
-  btn.textContent = 'Loading…';
-  document.getElementById('search').disabled = true;
-  document.getElementById('btnDl').disabled = true;
-  document.getElementById('tbl').style.display = 'none';
-  document.getElementById('emptyState').style.display = 'block';
-
-  try {
-    setStatus('Fetching this week\'s menu…');
-    const menuData = await gql(MENU_QUERY);
-    const slugs = (menuData?.data?.activeMenu?.menuDishes?.list || [])
-      .map(d => d.slug)
-      .filter((s, i, a) => a.indexOf(s) === i);
-
-    if (!slugs.length) throw new Error('No meals found in active menu.');
-
-    const meals = [];
-    for (let i = 0; i < slugs.length; i++) {
-      setStatus(`Fetching meal ${i + 1} of ${slugs.length}…`);
-      try {
-        const data = await gql(DISH_QUERY, { slug: slugs[i] });
-        const dish = data?.data?.oneMealKitDish;
-        if (!dish) continue;
-
-        const cats = (dish.mealKitCategories || []).map(c => c.title || '');
-        if (cats.some(c => c.toLowerCase().includes('lunch'))) continue;
-
-        const n = dish.nutritionPerServing || {};
-        const overall = dish.overallTime || {};
-
-        meals.push({
-          name:          dish.name || '',
-          subTitle:      dish.subTitle || '',
-          slug:          slugs[i],
-          url:           `https://www.ucook.co.za/meal-kit/${slugs[i]}`,
-          category:      cats[0] || '',
-          proteinSource: detectProteinSource(dish.sentIngredients || [], dish.name || ''),
-          cookTime:      overall.min ? `${overall.min}–${overall.max} min` : '',
-          cookWithin:    dish.cookWithin || 0,
-          protein:       n.protein || 0,
-          fibre:         n.fibre || 0,
-          fat:           n.fat || 0,
-          saturatedFat:  n.saturatedFat || 0,
-          carbs:         n.carbs || 0,
-          sugars:        n.sugars || 0,
-          sodium:        n.salt || 0,
-          kcal:          n.energyInKiloCalories || 0,
-          description:   dish.description || '',
-          sentIngredients: dish.sentIngredients || [],
-        });
-      } catch (e) {
-        console.warn(`Skipped ${slugs[i]}:`, e);
-      }
-    }
-
-    ALL_MEALS = meals.map(m => ({
-      ...m,
-      rank:      computeRank(m),
-      rankOrder: RANK_ORDER[computeRank(m)],
-      infoFlags: computeInfoFlags(m),
-      redFlags:  computeRedFlags(m),
-    }));
-
-    document.getElementById('tbl').style.display = '';
-    document.getElementById('emptyState').style.display = 'none';
-    document.getElementById('search').disabled = false;
-    document.getElementById('btnDl').disabled = false;
-
-    const counts = {};
-    ALL_MEALS.forEach(m => counts[m.rank] = (counts[m.rank] || 0) + 1);
-    const summary = ['Gold','Silver','Bronze','Unranked']
-      .filter(r => counts[r])
-      .map(r => `${counts[r]} ${r}`)
-      .join(' · ');
-    const d = new Date();
-    document.getElementById('meta').textContent =
-      `Per serving · dinner meals only · ${d.toLocaleDateString('en-ZA', {day:'numeric',month:'long',year:'numeric'})}`;
-    setStatus(`${ALL_MEALS.length} meals loaded: ${summary}`);
-    renderTable();
-
-  } catch (e) {
-    if (e.message === 'NO_WORKER') {
-      document.getElementById('setupBar').style.display = 'flex';
-      setStatus('Enter your Cloudflare Worker URL above.');
-    } else {
-      setStatus(`Error: ${e.message}`);
-    }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Refresh';
-  }
-}
-
-// ── Protein source detection ──────────────────────────────────────────────────
-const PROTEIN_SOURCES = [
-  ['Ostrich',     ['ostrich']],
-  ['Venison',     ['venison','springbok','kudu','impala','warthog']],
-  ['Lamb',        ['lamb','mutton']],
-  ['Wagyu Beef',  ['wagyu']],
-  ['Beef',        ['beef','sirloin','brisket','ribeye','rump','oxtail']],
-  ['Beef Mince',  ['beef mince','mince']],
-  ['Pork',        ['pork','banger','sausage','chorizo','bacon','ham','pancetta']],
-  ['Chicken',     ['chicken','poultry']],
-  ['Duck',        ['duck']],
-  ['Salmon',      ['salmon']],
-  ['Trout',       ['trout']],
-  ['Hake',        ['hake']],
-  ['Swordfish',   ['swordfish']],
-  ['Fish',        ['fish fillet','fish']],
-  ['Mussels',     ['mussel']],
-  ['Seafood',     ['prawn','shrimp','calamari','squid','crab','lobster']],
-  ['Eggs',        ['egg']],
-  ['Tofu',        ['tofu','tempeh']],
-];
-
-function detectProteinSource(ingredients, name) {
-  const text = [...ingredients, name].join(' ').toLowerCase();
-  for (const [label, keywords] of PROTEIN_SOURCES) {
-    if (keywords.some(k => text.includes(k))) return label;
-  }
-  return 'Plant-based';
-}
-
-// ── Ranking ───────────────────────────────────────────────────────────────────
-const RANK_ORDER = { Gold: 0, Silver: 1, Bronze: 2, Unranked: 3 };
-
-function hasBeetroot(m) {
-  return [m.name, m.subTitle, m.description, ...m.sentIngredients]
-    .join(' ').toLowerCase().includes('beetroot');
-}
-
-function isPrimarilyFried(m) {
-  const text = [m.name, m.subTitle, m.description].join(' ').toLowerCase();
-  if (['deep fry','deep-fry','deep fried','deep-fried'].some(w => text.includes(w))) return true;
-  const n = m.name.toLowerCase();
-  return n.startsWith('fried ') || n.includes(' fried ');
-}
-
-function computeRank(m) {
-  if (hasBeetroot(m) || isPrimarilyFried(m)) return 'Unranked';
-  const { protein: p, fibre: f, saturatedFat: s, sodium: n } = m;
-  if (p >= 50 && f >= 10 && s <= 10 && n <= 1200) return 'Gold';
-  if ([p >= 50, f >= 8,  s <= 13, n <= 1500].filter(Boolean).length >= 3) return 'Silver';
-  if ([p >= 40, f >= 6,  s <= 15, n <= 1800].filter(Boolean).length >= 2) return 'Bronze';
-  return 'Unranked';
-}
-
-function computeInfoFlags(m) {
-  const flags = [];
-  if (hasBeetroot(m))    flags.push('Contains beetroot');
-  if (isPrimarilyFried(m)) flags.push('Primarily fried');
-  if ([m.name, m.subTitle, ...m.sentIngredients].join(' ').toLowerCase().includes('mushroom'))
-    flags.push('Contains mushrooms');
-  return flags;
-}
-
-function computeRedFlags(m) {
-  const flags = [];
-  if (m.sodium > 1800)      flags.push('Sodium >1800mg');
-  if (m.saturatedFat > 20)  flags.push('Sat Fat >20g');
-  if (m.sugars > 25)        flags.push('Sugar >25g');
-  if (m.protein < 35)       flags.push('Protein <35g');
-  if (m.fibre < 5)          flags.push('Fibre <5g');
-  if (m.kcal > 1000)        flags.push('>1000 kcal');
-  return flags;
-}
-
-// ── Sorting ───────────────────────────────────────────────────────────────────
+const RAW = [{"name": "Boschendal's Spiced Chicken & Herb-whipped Crème", "subTitle": "with charred baby marrow, leeks & honeyed nuts", "slug": "q4-w3-af-chicken-with-whipped-feta-sauce", "url": "https://www.ucook.co.za/meal-kit/q4-w3-af-chicken-with-whipped-feta-sauce", "category": "Adventurous Foodie", "proteinSource": "Chicken", "rank": "Silver", "rankOrder": 1, "cookTime": "30–60 min", "cookWithin": 3, "protein": 59.9, "fibre": 18.1, "fat": 40.8, "saturatedFat": 13.3, "carbs": 80, "sugars": 38.1, "sodium": 1151, "kcal": 830, "infoFlags": [], "redFlags": ["Sugar >25g"]}, {"name": "Sticky Garlic Pork & Pear-potato Mash", "subTitle": "with a fresh tomato & parsley salad", "slug": "q3-w6-af-sticky-garlic-pork-pear-potato-mash", "url": "https://www.ucook.co.za/meal-kit/q3-w6-af-sticky-garlic-pork-pear-potato-mash", "category": "Adventurous Foodie", "proteinSource": "Pork", "rank": "Bronze", "rankOrder": 2, "cookTime": "35–55 min", "cookWithin": 2, "protein": 31.2, "fibre": 17.8, "fat": 95, "saturatedFat": 36.3, "carbs": 113, "sugars": 50.8, "sodium": 934, "kcal": 1452, "infoFlags": [], "redFlags": ["Sat Fat >20g", "Sugar >25g", "Protein <35g", ">1000 kcal"]}, {"name": "Golden Squid & Curried Mayo", "subTitle": "with toasted almonds", "slug": "q1-w10-af-crispy-squid-curried-mayo", "url": "https://www.ucook.co.za/meal-kit/q1-w10-af-crispy-squid-curried-mayo", "category": "Adventurous Foodie", "proteinSource": "Seafood", "rank": "Silver", "rankOrder": 1, "cookTime": "40–55 min", "cookWithin": 1, "protein": 34.5, "fibre": 11.2, "fat": 30.5, "saturatedFat": 2.7, "carbs": 70, "sugars": 10.8, "sodium": 270, "kcal": 677, "infoFlags": [], "redFlags": ["Protein <35g"]}, {"name": "Vegetarian Truffle Mac & Cheese", "subTitle": "with golden breadcrumbs, green beans & pine nuts", "slug": "q2-w6-af-caramalized-leek-truffle-mac-n-cheese", "url": "https://www.ucook.co.za/meal-kit/q2-w6-af-caramalized-leek-truffle-mac-n-cheese", "category": "Adventurous Foodie", "proteinSource": "Plant-based", "rank": "Bronze", "rankOrder": 2, "cookTime": "35–50 min", "cookWithin": 4, "protein": 41.5, "fibre": 11.2, "fat": 33.6, "saturatedFat": 15.1, "carbs": 137, "sugars": 23.2, "sodium": 460, "kcal": 1005, "infoFlags": [], "redFlags": [">1000 kcal"]}, {"name": "Honey-sesame Chicken Salad", "subTitle": "with plump tomato & crunchy croutons", "slug": "q1-w6-q-e-honey-siracha-chicken-salad", "url": "https://www.ucook.co.za/meal-kit/q1-w6-q-e-honey-siracha-chicken-salad", "category": "Quick & Easy", "proteinSource": "Chicken", "rank": "Silver", "rankOrder": 1, "cookTime": "20–25 min", "cookWithin": 3, "protein": 51.8, "fibre": 21.8, "fat": 43.7, "saturatedFat": 8.3, "carbs": 79, "sugars": 29.3, "sodium": 1202, "kcal": 891, "infoFlags": [], "redFlags": ["Sugar >25g"]}, {"name": "Spicy Beef Bean Chilli", "subTitle": "with sour cream", "slug": "q2-w5-q-e-spicy-beef-bean-chilli", "url": "https://www.ucook.co.za/meal-kit/q2-w5-q-e-spicy-beef-bean-chilli", "category": "Quick & Easy", "proteinSource": "Beef", "rank": "Silver", "rankOrder": 1, "cookTime": "20–25 min", "cookWithin": 3, "protein": 52.8, "fibre": 11.5, "fat": 47.2, "saturatedFat": 19.3, "carbs": 108, "sugars": 12.6, "sodium": 593, "kcal": 1107, "infoFlags": [], "redFlags": [">1000 kcal"]}, {"name": "Harissa Ostrich Flatbreads", "subTitle": "with tzatziki & walnuts", "slug": "harissa-ostrich-flatbreads", "url": "https://www.ucook.co.za/meal-kit/harissa-ostrich-flatbreads", "category": "Quick & Easy", "proteinSource": "Ostrich", "rank": "Bronze", "rankOrder": 2, "cookTime": "15–20 min", "cookWithin": 4, "protein": 46.7, "fibre": 6.8, "fat": 36.8, "saturatedFat": 5.9, "carbs": 61, "sugars": 11.8, "sodium": 1582, "kcal": 785, "infoFlags": [], "redFlags": []}, {"name": "Basil-infused Beef Sirloin Pasta", "subTitle": "with sunflower seeds", "slug": "q1-w4-q-e-bocconcini-beef-orecchiette", "url": "https://www.ucook.co.za/meal-kit/q1-w4-q-e-bocconcini-beef-orecchiette", "category": "Quick & Easy", "proteinSource": "Beef", "rank": "Silver", "rankOrder": 1, "cookTime": "20–25 min", "cookWithin": 5, "protein": 57.4, "fibre": 5.1, "fat": 38.1, "saturatedFat": 10.1, "carbs": 81, "sugars": 4.3, "sodium": 802, "kcal": 1009, "infoFlags": [], "redFlags": [">1000 kcal"]}, {"name": "Fragrant Butter Chicken", "subTitle": "with a buttery naan bread & tomato sambal", "slug": "q2-w1-ff-butter-chicken", "url": "https://www.ucook.co.za/meal-kit/q2-w1-ff-butter-chicken", "category": "Fan Faves", "proteinSource": "Chicken", "rank": "Silver", "rankOrder": 1, "cookTime": "35–55 min", "cookWithin": 3, "protein": 55.9, "fibre": 11.7, "fat": 34.4, "saturatedFat": 14.7, "carbs": 135, "sugars": 19.2, "sodium": 1144, "kcal": 1091, "infoFlags": [], "redFlags": [">1000 kcal"]}, {"name": "Garlic-chilli Burnt Butter & Beef Roll", "subTitle": "with potato fries & mayo", "slug": "q3-w10-ff-steak-roll-garlic-chilli-burnt-butter", "url": "https://www.ucook.co.za/meal-kit/q3-w10-ff-steak-roll-garlic-chilli-burnt-butter", "category": "Fan Faves", "proteinSource": "Beef", "rank": "Bronze", "rankOrder": 2, "cookTime": "35–50 min", "cookWithin": 4, "protein": 54.1, "fibre": 14.9, "fat": 67.3, "saturatedFat": 27.1, "carbs": 111, "sugars": 15.5, "sodium": 3019, "kcal": 1266, "infoFlags": [], "redFlags": ["Sodium >1800mg", "Sat Fat >20g", ">1000 kcal"]}, {"name": "Boschendal's Rustic Lamb Lasagne Bake", "subTitle": "with pumpkin seeds", "slug": "boschendal-s-rustic-lamb-lasagne-bake", "url": "https://www.ucook.co.za/meal-kit/boschendal-s-rustic-lamb-lasagne-bake", "category": "Fan Faves", "proteinSource": "Lamb", "rank": "Bronze", "rankOrder": 2, "cookTime": "40–55 min", "cookWithin": 3, "protein": 70.5, "fibre": 10.9, "fat": 62.4, "saturatedFat": 25.8, "carbs": 84, "sugars": 24.2, "sodium": 1570, "kcal": 1188, "infoFlags": [], "redFlags": ["Sat Fat >20g", ">1000 kcal"]}, {"name": "Spiced Pork Belly & Vermicelli Noodles", "subTitle": "with edamame beans & smashed cucumber", "slug": "q3-w13-ff-pork-neck-vermicelli", "url": "https://www.ucook.co.za/meal-kit/q3-w13-ff-pork-neck-vermicelli", "category": "Fan Faves", "proteinSource": "Pork", "rank": "Unranked", "rankOrder": 3, "cookTime": "35–55 min", "cookWithin": 2, "protein": 33.1, "fibre": 9.6, "fat": 115.3, "saturatedFat": 41.1, "carbs": 103, "sugars": 37.4, "sodium": 2983, "kcal": 1586, "infoFlags": [], "redFlags": ["Sodium >1800mg", "Sat Fat >20g", "Sugar >25g", "Protein <35g", ">1000 kcal"]}, {"name": "Orzo & Golden Mushrooms", "subTitle": "with sun-dried tomatoes & cheddar cheese", "slug": "creamy-orzo-mushrooms", "url": "https://www.ucook.co.za/meal-kit/creamy-orzo-mushrooms", "category": "Veggie", "proteinSource": "Plant-based", "rank": "Bronze", "rankOrder": 2, "cookTime": "35–50 min", "cookWithin": 3, "protein": 29.5, "fibre": 11.1, "fat": 35.3, "saturatedFat": 18.6, "carbs": 90, "sugars": 20.2, "sodium": 704, "kcal": 794, "infoFlags": ["Contains mushrooms"], "redFlags": ["Protein <35g"]}, {"name": "Artichoke & Black Sesame Goat’s Cheese", "subTitle": "with green beans & crispy lentils", "slug": "q3-w9-veg-artichoke-black-sesame-goats-cheese", "url": "https://www.ucook.co.za/meal-kit/q3-w9-veg-artichoke-black-sesame-goats-cheese", "category": "Veggie", "proteinSource": "Plant-based", "rank": "Silver", "rankOrder": 1, "cookTime": "30–45 min", "cookWithin": 4, "protein": 23.2, "fibre": 18, "fat": 12.3, "saturatedFat": 4.9, "carbs": 58, "sugars": 19.2, "sodium": 354, "kcal": 394, "infoFlags": [], "redFlags": ["Protein <35g"]}, {"name": "Vegan Sweet Potato Moussaka", "subTitle": "with a green salad & dried pomegranate gems", "slug": "q2-w7-veg-deconstructed-aubergine-moussaka", "url": "https://www.ucook.co.za/meal-kit/q2-w7-veg-deconstructed-aubergine-moussaka", "category": "Veggie", "proteinSource": "Plant-based", "rank": "Silver", "rankOrder": 1, "cookTime": "45–65 min", "cookWithin": 5, "protein": 36.6, "fibre": 32, "fat": 8.7, "saturatedFat": 0.7, "carbs": 125, "sugars": 29.5, "sodium": 1233, "kcal": 751, "infoFlags": [], "redFlags": ["Sugar >25g"]}, {"name": "Sticky Plum Tofu & Rice", "subTitle": "with edamame beans & chilli flakes", "slug": "q3-w10-veg-sticky-plum-tofu-rice", "url": "https://www.ucook.co.za/meal-kit/q3-w10-veg-sticky-plum-tofu-rice", "category": "Veggie", "proteinSource": "Tofu", "rank": "Bronze", "rankOrder": 2, "cookTime": "40–55 min", "cookWithin": 4, "protein": 26.8, "fibre": 15, "fat": 8.1, "saturatedFat": 0.7, "carbs": 165, "sugars": 50.8, "sodium": 1543, "kcal": 846, "infoFlags": [], "redFlags": ["Sugar >25g", "Protein <35g"]}, {"name": "Soy-Glazed Pork Stir-fry", "subTitle": "with rice noodles", "slug": "q1-w1-calc-sweet-soy-pork-stir-fry", "url": "https://www.ucook.co.za/meal-kit/q1-w1-calc-sweet-soy-pork-stir-fry", "category": "Calorie Conscious", "proteinSource": "Pork", "rank": "Silver", "rankOrder": 1, "cookTime": "35–55 min", "cookWithin": 2, "protein": 43.6, "fibre": 10, "fat": 8.2, "saturatedFat": 3.2, "carbs": 56, "sugars": 12, "sodium": 1024.1, "kcal": 482, "infoFlags": [], "redFlags": []}, {"name": "Moroccan Beef & Salsa", "subTitle": "with potato chunks", "slug": "q2-w5-calc-moroccan-beef-salsa", "url": "https://www.ucook.co.za/meal-kit/q2-w5-calc-moroccan-beef-salsa", "category": "Calorie Conscious", "proteinSource": "Beef", "rank": "Silver", "rankOrder": 1, "cookTime": "40–60 min", "cookWithin": 4, "protein": 47.1, "fibre": 8, "fat": 7, "saturatedFat": 2, "carbs": 47, "sugars": 9, "sodium": 646.8, "kcal": 452, "infoFlags": [], "redFlags": []}, {"name": "Middle-eastern Chicken Tenders", "subTitle": "with butternut chunks & baby marrow", "slug": "q1-w4-calc-moroccan-style-chicken-koftas", "url": "https://www.ucook.co.za/meal-kit/q1-w4-calc-moroccan-style-chicken-koftas", "category": "Calorie Conscious", "proteinSource": "Chicken", "rank": "Silver", "rankOrder": 1, "cookTime": "40–55 min", "cookWithin": 3, "protein": 46.7, "fibre": 9, "fat": 12.1, "saturatedFat": 3.3, "carbs": 39, "sugars": 10, "sodium": 800, "kcal": 455, "infoFlags": [], "redFlags": []}, {"name": "Mediterranean Venison Frikkadels", "subTitle": "with baby potatoes & cottage cheese", "slug": "q4-w2-calc-mediterranean-ostrich-meatballs", "url": "https://www.ucook.co.za/meal-kit/q4-w2-calc-mediterranean-ostrich-meatballs", "category": "Calorie Conscious", "proteinSource": "Venison", "rank": "Silver", "rankOrder": 1, "cookTime": "40–60 min", "cookWithin": 4, "protein": 52.6, "fibre": 8, "fat": 9.8, "saturatedFat": 2.9, "carbs": 47, "sugars": 13, "sodium": 1067.2, "kcal": 485, "infoFlags": [], "redFlags": []}, {"name": "Boschendal's Mexican Chicken Cottage Pie", "subTitle": "with pumpkin mash & melted cheddar cheese", "slug": "q2-w5-cc-mexican-chicken-cottage-pie", "url": "https://www.ucook.co.za/meal-kit/q2-w5-cc-mexican-chicken-cottage-pie", "category": "Carb Conscious", "proteinSource": "Beef Mince", "rank": "Bronze", "rankOrder": 2, "cookTime": "40–60 min", "cookWithin": 1, "protein": 58.2, "fibre": 34.5, "fat": 63.1, "saturatedFat": 18, "carbs": 100, "sugars": 30.7, "sodium": 1623, "kcal": 1154, "infoFlags": [], "redFlags": ["Sugar >25g", ">1000 kcal"]}, {"name": "Trout Ribbon Chowder", "subTitle": "with peppers, corn, & dill", "slug": "q2-w5-cc-trout-ribbon-chowder", "url": "https://www.ucook.co.za/meal-kit/q2-w5-cc-trout-ribbon-chowder", "category": "Carb Conscious", "proteinSource": "Trout", "rank": "Bronze", "rankOrder": 2, "cookTime": "40–55 min", "cookWithin": 2, "protein": 24.9, "fibre": 13.3, "fat": 15.5, "saturatedFat": 7.8, "carbs": 71, "sugars": 20.8, "sodium": 1546, "kcal": 576, "infoFlags": [], "redFlags": ["Protein <35g"]}, {"name": "Lebanese-style Ostrich Strips", "subTitle": "with caramelised onion, crispy lentils & Danish-style feta", "slug": "q2-w5-cc-lebanese-style-ostrich-strips", "url": "https://www.ucook.co.za/meal-kit/q2-w5-cc-lebanese-style-ostrich-strips", "category": "Carb Conscious", "proteinSource": "Ostrich", "rank": "Silver", "rankOrder": 1, "cookTime": "30–50 min", "cookWithin": 4, "protein": 55, "fibre": 16.8, "fat": 30.1, "saturatedFat": 11.6, "carbs": 56, "sugars": 15, "sodium": 1094, "kcal": 732, "infoFlags": [], "redFlags": []}, {"name": "Beef & Creamy Beet Bowl", "subTitle": "with a fresh salad & roasted almonds", "slug": "q4-w9-cc-beef-creamy-beet-bowl", "url": "https://www.ucook.co.za/meal-kit/q4-w9-cc-beef-creamy-beet-bowl", "category": "Carb Conscious", "proteinSource": "Beef", "rank": "Unranked", "rankOrder": 3, "cookTime": "40–60 min", "cookWithin": 4, "protein": 42, "fibre": 8.5, "fat": 41.1, "saturatedFat": 5.8, "carbs": 27, "sugars": 10, "sodium": 666, "kcal": 747, "infoFlags": ["Contains beetroot"], "redFlags": []}, {"name": "Mexi Chicken & Corn Salsa", "subTitle": "with basmati rice & tzatziki", "slug": "q2-w12-s-s-chicken-corn-salsa", "url": "https://www.ucook.co.za/meal-kit/q2-w12-s-s-chicken-corn-salsa", "category": "Simple & Save", "proteinSource": "Chicken", "rank": "Silver", "rankOrder": 1, "cookTime": "35–50 min", "cookWithin": 3, "protein": 51.3, "fibre": 7.6, "fat": 6.1, "saturatedFat": 2, "carbs": 89, "sugars": 14.3, "sodium": 699, "kcal": 630, "infoFlags": [], "redFlags": []}, {"name": "Roast Chicken & Smashed Baby Potatoes", "subTitle": "with sun-dried tomatoes & NOMU One For All Rub", "slug": "q2-w5-ss-roast-chicken-smashed-baby-potatoes", "url": "https://www.ucook.co.za/meal-kit/q2-w5-ss-roast-chicken-smashed-baby-potatoes", "category": "Simple & Save", "proteinSource": "Chicken", "rank": "Silver", "rankOrder": 1, "cookTime": "40–60 min", "cookWithin": 3, "protein": 56.5, "fibre": 7.8, "fat": 31.8, "saturatedFat": 8.2, "carbs": 63, "sugars": 19.1, "sodium": 533, "kcal": 756, "infoFlags": [], "redFlags": []}, {"name": "Pork Mince Frikkadels & Gravy", "subTitle": "with sautéed kale", "slug": "pork-mince-frikkadels-gravy", "url": "https://www.ucook.co.za/meal-kit/pork-mince-frikkadels-gravy", "category": "Simple & Save", "proteinSource": "Beef", "rank": "Bronze", "rankOrder": 2, "cookTime": "35–55 min", "cookWithin": 1, "protein": 37.5, "fibre": 10.6, "fat": 33.2, "saturatedFat": 12, "carbs": 71, "sugars": 11.7, "sodium": 2978, "kcal": 738, "infoFlags": [], "redFlags": ["Sodium >1800mg"]}, {"name": "Sweet & Savoury Hoisin Beef Noodle Bowl", "subTitle": "with spring onion & sesame seeds", "slug": "q1-w3-s-s-hoisin-pork-egg-noodles", "url": "https://www.ucook.co.za/meal-kit/q1-w3-s-s-hoisin-pork-egg-noodles", "category": "Simple & Save", "proteinSource": "Beef", "rank": "Bronze", "rankOrder": 2, "cookTime": "30–45 min", "cookWithin": 5, "protein": 46.9, "fibre": 5.8, "fat": 35.2, "saturatedFat": 4.9, "carbs": 81, "sugars": 25.7, "sodium": 1419, "kcal": 834, "infoFlags": [], "redFlags": ["Sugar >25g"]}];
 const STRING_COLS = new Set(['name','cookTime','category','proteinSource']);
-const DEFAULT_DIR = col => (STRING_COLS.has(col) || col === 'rankOrder' || col === 'cookWithin') ? 1 : -1;
-
+const DEFAULT_DIR = col => (STRING_COLS.has(col)||col==='rankOrder'||col==='cookWithin') ? 1 : -1;
 let sortStack = [{ col: 'rankOrder', dir: 1 }];
 
 function sortBy(col) {
-  if (sortStack[0].col === col) {
-    sortStack[0].dir *= -1;
-  } else {
-    sortStack = [{ col, dir: DEFAULT_DIR(col) }, sortStack[0]].slice(0, 2);
-  }
+  if (sortStack[0].col===col) { sortStack[0].dir*=-1; }
+  else { sortStack=[{col,dir:DEFAULT_DIR(col)},sortStack[0]].slice(0,2); }
   renderTable();
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
 function renderTable() {
-  const q = document.getElementById('search').value.toLowerCase();
-  let rows = ALL_MEALS.filter(m =>
-    !q ||
-    m.name.toLowerCase().includes(q) ||
-    (m.subTitle || '').toLowerCase().includes(q) ||
-    (m.category || '').toLowerCase().includes(q) ||
-    (m.proteinSource || '').toLowerCase().includes(q)
-  );
-
-  rows.sort((a, b) => {
-    for (const { col, dir } of sortStack) {
-      let av = a[col] ?? (typeof b[col] === 'string' ? '' : 0);
-      let bv = b[col] ?? (typeof a[col] === 'string' ? '' : 0);
-      const r = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
-      if (r !== 0) return dir * r;
+  const q=document.getElementById('search').value.toLowerCase();
+  let rows=RAW.filter(m=>!q||m.name.toLowerCase().includes(q)||(m.subTitle||'').toLowerCase().includes(q)||(m.category||'').toLowerCase().includes(q)||(m.proteinSource||'').toLowerCase().includes(q));
+  rows.sort((a,b)=>{
+    for(const {col,dir} of sortStack){
+      let av=a[col]??(typeof b[col]==='string'?'':0);
+      let bv=b[col]??(typeof a[col]==='string'?'':0);
+      const r=typeof av==='string'?av.localeCompare(bv):av-bv;
+      if(r!==0) return dir*r;
     }
     return 0;
   });
-
-  document.querySelectorAll('th').forEach(th => {
-    th.classList.remove('sorted-asc', 'sorted-desc', 'secondary-sort');
-    const idx = sortStack.findIndex(s => s.col === th.dataset.col);
-    if (idx === 0) th.classList.add(sortStack[0].dir === 1 ? 'sorted-asc' : 'sorted-desc');
-    else if (idx === 1) th.classList.add('secondary-sort');
+  document.querySelectorAll('th').forEach(th=>{
+    th.classList.remove('sorted-asc','sorted-desc','secondary-sort');
+    const idx=sortStack.findIndex(s=>s.col===th.dataset.col);
+    if(idx===0) th.classList.add(sortStack[0].dir===1?'sorted-asc':'sorted-desc');
+    else if(idx===1) th.classList.add('secondary-sort');
   });
-
-  document.getElementById('tbody').innerHTML = rows.map(m => `
+  document.getElementById('tbody').innerHTML=rows.map(m=>`
     <tr class="row-${m.rank}">
       <td><span class="badge badge-${m.rank}">${m.rank}</span></td>
-      <td style="white-space:nowrap;font-size:0.79rem;color:#555">${esc(m.category)}</td>
-      <td style="white-space:nowrap;font-size:0.79rem">${esc(m.proteinSource)}</td>
+      <td style="white-space:nowrap;font-size:0.78rem;color:#555">${esc(m.category)}</td>
+      <td style="white-space:nowrap;font-size:0.78rem">${esc(m.proteinSource)}</td>
       <td>
         <div class="meal-name">${esc(m.name)}</div>
-        ${m.subTitle ? `<div class="meal-sub">${esc(m.subTitle)}</div>` : ''}
-        ${(m.redFlags.length || m.infoFlags.length) ? `
-          <div class="flags">
-            ${m.redFlags.map(f => `<span class="flag flag-warn">⚑ ${esc(f)}</span>`).join('')}
-            ${m.infoFlags.map(f => `<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}
-          </div>` : ''}
+        ${m.subTitle?`<div class="meal-sub">${esc(m.subTitle)}</div>`:''}
+        ${(m.redFlags.length||m.infoFlags.length)?`<div class="flags">${m.redFlags.map(f=>`<span class="flag flag-warn">⚑ ${esc(f)}</span>`).join('')}${m.infoFlags.map(f=>`<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}</div>`:''}
         <div class="meal-link"><a href="${m.url}" target="_blank">View on UCook ↗</a></div>
       </td>
-      <td style="white-space:nowrap;font-size:0.8rem">${esc(m.cookTime)}</td>
-      <td class="num" style="font-size:0.8rem">${m.cookWithin ? m.cookWithin + 'd' : '—'}</td>
+      <td style="white-space:nowrap;font-size:0.79rem">${esc(m.cookTime)}</td>
+      <td class="num" style="font-size:0.79rem">${m.cookWithin?m.cookWithin+'d':'—'}</td>
       <td class="num">${fmt(m.protein)}</td>
       <td class="num">${fmt(m.fibre)}</td>
       <td class="num">${fmt(m.fat)}</td>
@@ -568,45 +162,27 @@ function renderTable() {
       <td class="num">${fmt(m.sugars)}</td>
       <td class="num">${Math.round(m.sodium)}</td>
       <td class="num">${Math.round(m.kcal)}</td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
+  const counts={};
+  rows.forEach(m=>counts[m.rank]=(counts[m.rank]||0)+1);
+  const summary=['Gold','Silver','Bronze','Unranked'].filter(r=>counts[r]).map(r=>`${counts[r]} ${r}`).join(' · ');
+  document.getElementById('statusBar').textContent=`${rows.length} meals${q?' matching "'+q+'"':''} — ${summary}`;
 }
 
-// ── CSV ───────────────────────────────────────────────────────────────────────
 function downloadCSV() {
-  const cols = ['rank','category','proteinSource','name','subTitle','url','cookTime','cookWithin',
-                'protein','fibre','fat','saturatedFat','carbs','sugars','sodium','kcal'];
-  const headers = ['Rank','Category','Protein Source','Name','Sub-title','URL','Cook Time','Eat Within (days)',
-                   'Protein (g)','Fibre (g)','Fat (g)','Sat Fat (g)','Carbs (g)','Sugars (g)','Sodium (mg)','Kcal'];
-  const lines = [headers.join(',')];
-  [...ALL_MEALS].sort((a,b) => a.rankOrder - b.rankOrder || b.protein - a.protein).forEach(m => {
-    lines.push(cols.map(c => {
-      const v = String(m[c] ?? '');
-      return (v.includes(',') || v.includes('"') || v.includes('\n'))
-        ? `"${v.replace(/"/g,'""')}"` : v;
-    }).join(','));
+  const cols=['rank','category','proteinSource','name','subTitle','url','cookTime','cookWithin','protein','fibre','fat','saturatedFat','carbs','sugars','sodium','kcal'];
+  const headers=['Rank','Category','Protein Source','Name','Sub-title','URL','Cook Time','Eat Within (days)','Protein (g)','Fibre (g)','Fat (g)','Sat Fat (g)','Carbs (g)','Sugars (g)','Sodium (mg)','Kcal'];
+  const lines=[headers.join(',')];
+  [...RAW].sort((a,b)=>a.rankOrder-b.rankOrder||b.protein-a.protein).forEach(m=>{
+    lines.push(cols.map(c=>{const v=String(m[c]??'');return(v.includes(',')||v.includes('"')||v.includes('\n'))?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(','));
   });
-  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'ucook_nutrition.csv';
-  a.click();
+  const blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ucook_nutrition.csv';a.click();
 }
 
-// ── Utils ─────────────────────────────────────────────────────────────────────
-function fmt(v) { return (v != null && v !== '') ? Number(v).toFixed(1) : '—'; }
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-function setStatus(msg) { document.getElementById('statusBar').textContent = msg; }
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  if (!getWorkerUrl()) {
-    document.getElementById('setupBar').style.display = 'flex';
-    setStatus('Enter your Cloudflare Worker URL above to get started.');
-  }
-});
+function fmt(v){return(v!=null&&v!=='')?Number(v).toFixed(1):'—';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+renderTable();
 </script>
 </body>
 </html>
