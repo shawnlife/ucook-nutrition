@@ -250,7 +250,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   }
 
   /* ── Top bar ── */
-  .top-bar { flex-shrink: 0; background: #f5f5f0; padding: 12px 16px 0; z-index: 10; }
+  .top-bar { flex-shrink: 0; background: #f5f5f0; padding: 14px 24px 0; z-index: 10; }
 
   .top-row {
     display: flex; align-items: center; justify-content: space-between;
@@ -296,7 +296,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .flag-info { background: #fff3e0; border: 1px solid #ffcc80; color: #e65100; }
 
   /* ── Status bar ── */
-  .status-bar { padding: 3px 16px 4px; font-size: 0.76rem; color: #999; flex-shrink: 0; min-height: 20px; }
+  .status-bar { padding: 3px 24px 4px; font-size: 0.76rem; color: #999; flex-shrink: 0; min-height: 20px; }
 
   /* ── Table ── */
   .table-wrap { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; }
@@ -304,7 +304,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   table { width: 100%; border-collapse: collapse; background: white; font-size: 0.82rem; }
   thead tr { background: #1a1a1a; color: white; }
   th {
-    padding: 10px 11px; text-align: left; white-space: nowrap;
+    padding: 10px 16px; text-align: left; white-space: nowrap;
     user-select: none; cursor: pointer;
     position: sticky; top: 0; z-index: 3; background: #1a1a1a;
   }
@@ -327,7 +327,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .table-wrap.scrolled th.col-meal,
   .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.12); }
 
-  td { padding: 9px 11px; border-bottom: 1px solid #f0f0eb; vertical-align: top; }
+  td { padding: 10px 16px; border-bottom: 1px solid #f0f0eb; vertical-align: top; }
+  .val-green { color: #2e7d32; font-weight: 700; }
+  .val-red   { color: #c62828; font-weight: 700; }
   tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #fafaf7; }
 
@@ -347,16 +349,16 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
   /* ── Mobile overrides ── */
   @media (max-width: 600px) {
-    .top-bar { padding: 10px 12px 0; }
+    .top-bar { padding: 10px 14px 0; }
     h1 { font-size: 1rem; }
     input[type=search] { width: 140px; font-size: 0.82rem; }
     .btn { padding: 8px 11px; font-size: 0.8rem; }
     .legend-toggle { display: block; }
     .legend { display: none; padding: 0 0 8px; }
     .legend.open { display: flex; }
-    .status-bar { padding: 2px 12px 4px; font-size: 0.72rem; }
-    td { padding: 8px 10px; }
-    th { padding: 9px 10px; font-size: 0.78rem; }
+    .status-bar { padding: 2px 14px 4px; font-size: 0.72rem; }
+    td { padding: 8px 12px; }
+    th { padding: 9px 12px; font-size: 0.78rem; }
     table { font-size: 0.78rem; }
   }
 </style>
@@ -380,8 +382,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <div class="legend-item"><span class="badge badge-Gold">Gold</span> all four: Protein ≥50g, Fibre ≥10g, Sat Fat ≤10g, Sodium ≤1200mg</div>
       <div class="legend-item"><span class="badge badge-Silver">Silver</span> 3 of 4: Protein ≥50g, Fibre ≥8g, Sat Fat ≤13g, Sodium ≤1500mg</div>
       <div class="legend-item"><span class="badge badge-Bronze">Bronze</span> 2 of 4: Protein ≥40g, Fibre ≥6g, Sat Fat ≤15g, Sodium ≤1800mg</div>
-      <div class="legend-item"><span class="flag flag-warn">⚑ red flag</span> Sodium >1800mg · Sat Fat >20g · Sugar >25g · Protein <35g · Fibre <5g · >1000 kcal</div>
-      <div class="legend-item"><span class="flag flag-info">⚑ info flag</span> Beetroot · Fried · Mushrooms</div>
+      <div class="legend-item"><span class="val-green" style="font-weight:700">green</span> value hits Gold threshold (Protein ≥50g · Fibre ≥10g · Sat Fat ≤10g · Sodium ≤1200mg)</div>
+      <div class="legend-item"><span class="val-red" style="font-weight:700">red</span> value exceeds warning threshold (Sodium >1800mg · Sat Fat >20g · Sugar >25g · Protein <35g · Fibre <5g · >1000 kcal)</div>
+      <div class="legend-item"><span class="flag flag-info">⚑ info flag</span> Beetroot · Fried · Mushrooms (causes Unranked)</div>
     </div>
   </div>
 </div>
@@ -436,6 +439,21 @@ function sortBy(col) {
   renderTable();
 }
 
+// val coloring: higher-is-better → green>=greenOk, red<=redBad
+//               lower-is-better → green<=greenOk, red>=redBad
+function cn(val, greenOk, redBad, lowerBetter) {
+  if (val == null || val === '') return '';
+  const n = Number(val);
+  if (lowerBetter) {
+    if (greenOk != null && n <= greenOk) return ' val-green';
+    if (redBad  != null && n >= redBad)  return ' val-red';
+  } else {
+    if (greenOk != null && n >= greenOk) return ' val-green';
+    if (redBad  != null && n <= redBad)  return ' val-red';
+  }
+  return '';
+}
+
 function renderTable() {
   const q=document.getElementById('search').value.toLowerCase();
   let rows=RAW.filter(m=>!q||m.name.toLowerCase().includes(q)||(m.subTitle||'').toLowerCase().includes(q)||(m.category||'').toLowerCase().includes(q)||(m.proteinSource||'').toLowerCase().includes(q));
@@ -446,7 +464,10 @@ function renderTable() {
       const r=typeof av==='string'?av.localeCompare(bv):av-bv;
       if(r!==0) return dir*r;
     }
-    return 0;
+    // tiebreakers: fewer flags first, then more protein
+    const fc=(a.redFlags.length+a.infoFlags.length)-(b.redFlags.length+b.infoFlags.length);
+    if(fc!==0) return fc;
+    return b.protein-a.protein;
   });
   document.querySelectorAll('th').forEach(th=>{
     th.classList.remove('sorted-asc','sorted-desc','secondary-sort');
@@ -460,21 +481,21 @@ function renderTable() {
       <td class="col-meal">
         <div class="meal-name">${esc(m.name)}</div>
         ${m.subTitle?`<div class="meal-sub">${esc(m.subTitle)}</div>`:''}
-        ${(m.redFlags.length||m.infoFlags.length)?`<div class="flags">${m.redFlags.map(f=>`<span class="flag flag-warn">⚑ ${esc(f)}</span>`).join('')}${m.infoFlags.map(f=>`<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}</div>`:''}
+        ${m.infoFlags.length?`<div class="flags">${m.infoFlags.map(f=>`<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}</div>`:''}
         <div class="meal-link"><a href="${m.url}" target="_blank">View on UCook ↗</a></div>
       </td>
       <td style="white-space:nowrap;font-size:0.77rem;color:#555">${esc(m.category)}</td>
       <td style="white-space:nowrap;font-size:0.77rem">${esc(m.proteinSource)}</td>
       <td style="white-space:nowrap;font-size:0.78rem">${esc(m.cookTime)}</td>
       <td class="num" style="font-size:0.78rem">${m.cookWithin?m.cookWithin+'d':'—'}</td>
-      <td class="num">${fmt(m.protein)}</td>
-      <td class="num">${fmt(m.fibre)}</td>
+      <td class="num${cn(m.protein,50,35,false)}">${fmt(m.protein)}</td>
+      <td class="num${cn(m.fibre,10,5,false)}">${fmt(m.fibre)}</td>
       <td class="num">${fmt(m.fat)}</td>
-      <td class="num">${fmt(m.saturatedFat)}</td>
+      <td class="num${cn(m.saturatedFat,10,20,true)}">${fmt(m.saturatedFat)}</td>
       <td class="num">${fmt(m.carbs)}</td>
-      <td class="num">${fmt(m.sugars)}</td>
-      <td class="num">${Math.round(m.sodium)}</td>
-      <td class="num">${Math.round(m.kcal)}</td>
+      <td class="num${cn(m.sugars,null,25,false)}">${fmt(m.sugars)}</td>
+      <td class="num${cn(m.sodium,1200,1800,true)}">${Math.round(m.sodium)}</td>
+      <td class="num${cn(m.kcal,null,1000,false)}">${Math.round(m.kcal)}</td>
     </tr>`).join('');
   const counts={};
   rows.forEach(m=>counts[m.rank]=(counts[m.rank]||0)+1);
