@@ -85,23 +85,24 @@
   th.secondary-sort { opacity: 0.7; }
   th.secondary-sort::after { content: " ·"; font-size: 0.8em; opacity: 0.5; }
 
-  /* Desktop: rank col has fixed width, no horizontal scroll needed */
-  th.col-rank { min-width: 64px; }
-
   td { padding: 10px 16px; border-bottom: 1px solid #f0f0eb; vertical-align: top; }
   .val-green { color: #2e7d32; font-weight: 700; }
   .val-red   { color: #c62828; font-weight: 700; }
   tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: #fafaf7; }
-  tbody tr:hover td.col-rank,
   tbody tr:hover td.col-meal { background: #fafaf7; }
 
-  tr.row-Gold     td.col-rank { border-left: 3px solid #ffd700; }
-  tr.row-Silver   td.col-rank { border-left: 3px solid #c8c8c8; }
-  tr.row-Bronze   td.col-rank { border-left: 3px solid #cd7f32; }
-  tr.row-Unranked td.col-rank { border-left: 3px solid #e0e0e0; }
+  /* Rank dot — colored circle before the meal name */
+  .rank-dot {
+    display: inline-block; width: 0.65em; height: 0.65em; border-radius: 50%;
+    margin-right: 7px; flex-shrink: 0; vertical-align: middle;
+  }
+  .rank-dot-Gold   { background: #ffd700; box-shadow: 0 0 0 1.5px #b8960c; }
+  .rank-dot-Silver { background: #c0c0c0; box-shadow: 0 0 0 1.5px #999; }
+  .rank-dot-Bronze { background: #cd7f32; box-shadow: 0 0 0 1.5px #9a5e1e; }
+  /* NR: no dot rendered */
 
-  .meal-name { font-weight: 600; line-height: 1.3; }
+  .meal-name { font-weight: 600; line-height: 1.4; display: flex; align-items: center; }
   .meal-sub  { font-size: 0.74rem; color: #888; margin-top: 2px; }
   .flags     { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 3px; }
   .meal-link { font-size: 0.72rem; margin-top: 3px; }
@@ -126,13 +127,10 @@
     td { padding: 8px 12px; }
     th { padding: 9px 12px; font-size: 0.78rem; }
     table { font-size: 0.78rem; }
-    /* Re-enable horizontal scroll on mobile with sticky left cols */
+    /* Re-enable horizontal scroll on mobile with sticky meal col */
     .table-wrap { overflow-x: auto; padding: 0; }
-    th.col-rank { position: sticky; left: 0; z-index: 4; background: #1a1a1a; min-width: 52px; }
-    td.col-rank { position: sticky; left: 0; z-index: 2; background: white; }
-    tbody tr:hover td.col-rank { background: #fafaf7; }
-    th.col-meal { position: sticky; left: 60px; z-index: 4; background: #1a1a1a; min-width: 140px; max-width: 160px; }
-    td.col-meal { position: sticky; left: 60px; z-index: 2; background: white; min-width: 140px; max-width: 160px; }
+    th.col-meal { position: sticky; left: 0; z-index: 4; background: #1a1a1a; min-width: 150px; max-width: 170px; }
+    td.col-meal { position: sticky; left: 0; z-index: 2; background: white; min-width: 150px; max-width: 170px; }
     tbody tr:hover td.col-meal { background: #fafaf7; }
     .table-wrap.scrolled th.col-meal,
     .table-wrap.scrolled td.col-meal { box-shadow: 3px 0 6px -2px rgba(0,0,0,0.18); }
@@ -184,7 +182,6 @@
   <table>
     <thead>
       <tr>
-        <th class="col-rank" onclick="sortBy('rankOrder')" data-col="rankOrder" class="sorted-asc">Rank</th>
         <th class="col-meal" onclick="sortBy('name')" data-col="name">Meal</th>
         <th onclick="sortBy('category')" data-col="category">Category</th>
         <th onclick="sortBy('proteinSource')" data-col="proteinSource">Protein source</th>
@@ -257,9 +254,8 @@ function renderTable() {
   });
   document.getElementById('tbody').innerHTML=rows.map(m=>`
     <tr class="row-${m.rank}">
-      <td class="col-rank"><span class="badge badge-${m.rank}">${m.rank==='Unranked'?'NR':m.rank}</span></td>
       <td class="col-meal">
-        <div class="meal-name">${esc(m.name)}</div>
+        <div class="meal-name">${m.rank!=='Unranked'?`<span class="rank-dot rank-dot-${m.rank}"></span>`:''}${esc(m.name)}</div>
         ${m.subTitle?`<div class="meal-sub">${esc(m.subTitle)}</div>`:''}
         ${(m.redFlags.length||m.infoFlags.length)?`<div class="flags">${m.redFlags.map(f=>`<span class="flag flag-warn">⚑ ${esc(f)}</span>`).join('')}${m.infoFlags.map(f=>`<span class="flag flag-info">⚑ ${esc(f)}</span>`).join('')}</div>`:''}
         <div class="meal-link"><a href="${m.url}" target="_blank">View on UCook ↗</a></div>
