@@ -257,8 +257,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
     cursor: pointer;
     font-weight: 600;
   }
-  .btn-dl   { background: #1b5e20; color: white; }
+  .btn-dl      { background: #1b5e20; color: white; }
   .btn-dl:hover { background: #145a1c; }
+  .btn-refresh  { background: #1a1a1a; color: white; }
+  .btn-refresh:hover { background: #333; }
   .legend {
     display: flex;
     gap: 14px;
@@ -349,6 +351,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <div class="controls">
     <input type="search" id="search" placeholder="Search meals…" oninput="renderTable()">
     <button class="btn btn-dl" onclick="downloadCSV()">⬇ CSV</button>
+    <a class="btn btn-refresh" href="https://github.com/shawnlife/ucook-nutrition/actions/workflows/update.yml" target="_blank" title="Trigger a manual data refresh via GitHub Actions">↺ Refresh</a>
   </div>
 </header>
 
