@@ -527,22 +527,34 @@ def build_html(meals):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-open", action="store_true", help="Skip opening browser (used in CI)")
+    args = parser.parse_args()
+
     meals = fetch_all_meals()
 
-    # Print quick summary
     from collections import Counter
     tally = Counter(m["rank"] for m in meals)
-    print("Summary:")
+    print("\nSummary:")
     for rank in ["Gold", "Silver", "Bronze", "Unranked"]:
         if tally[rank]:
             print(f"  {rank:10s}: {tally[rank]}")
 
     html = build_html(meals)
-    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ucook_nutrition.html")
-    with open(out_path, "w", encoding="utf-8") as f:
+    base = os.path.dirname(os.path.abspath(__file__))
+
+    # index.html → served by GitHub Pages
+    index_path = os.path.join(base, "index.html")
+    with open(index_path, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"\nOpening: {out_path}")
-    webbrowser.open(f"file://{out_path}")
+    print(f"\nSaved: {index_path}")
+
+    if not args.no_open:
+        preview_path = os.path.join(base, "ucook_nutrition.html")
+        with open(preview_path, "w", encoding="utf-8") as f:
+            f.write(html)
+        webbrowser.open(f"file://{preview_path}")
 
 
 if __name__ == "__main__":
