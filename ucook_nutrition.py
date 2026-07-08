@@ -351,7 +351,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   <div class="controls">
     <input type="search" id="search" placeholder="Search meals…" oninput="renderTable()">
     <button class="btn btn-dl" onclick="downloadCSV()">⬇ CSV</button>
-    <a class="btn btn-refresh" href="https://github.com/shawnlife/ucook-nutrition/actions/workflows/update.yml" target="_blank" title="Trigger a manual data refresh via GitHub Actions">↺ Refresh</a>
+    <button class="btn btn-refresh" id="refreshBtn" onclick="triggerRefresh()">↺ Refresh</button>
   </div>
 </header>
 
@@ -508,6 +508,48 @@ function downloadCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = 'ucook_nutrition.csv';
   a.click();
+}
+
+async function triggerRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  const STORAGE_KEY = 'ucook_gh_token';
+  let token = localStorage.getItem(STORAGE_KEY);
+  if (!token) {
+    token = prompt('Enter your GitHub personal access token to enable one-click refresh:\n(Stored only in your browser — never sent anywhere except GitHub)');
+    if (!token) return;
+    localStorage.setItem(STORAGE_KEY, token.trim());
+    token = token.trim();
+  }
+  btn.disabled = true;
+  btn.textContent = 'Triggering…';
+  try {
+    const res = await fetch(
+      'https://api.github.com/repos/shawnlife/ucook-nutrition/actions/workflows/update.yml/dispatches',
+      {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: 'main' })
+      }
+    );
+    if (res.status === 204) {
+      let secs = 90;
+      const tick = setInterval(() => {
+        secs--;
+        btn.textContent = 'Updating… ' + secs + 's';
+        if (secs <= 0) { clearInterval(tick); location.reload(); }
+      }, 1000);
+    } else if (res.status === 401) {
+      localStorage.removeItem(STORAGE_KEY);
+      btn.textContent = 'Token invalid — try again';
+      btn.disabled = false;
+    } else {
+      btn.textContent = 'Failed — try again';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    btn.textContent = 'Error — try again';
+    btn.disabled = false;
+  }
 }
 
 renderTable();
