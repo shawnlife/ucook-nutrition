@@ -113,37 +113,49 @@ def has_mushrooms(dish):
 
 
 def rank_meal(n):
-    """Return 'Gold', 'Silver', 'Bronze', or 'Unranked'."""
-    protein = n.get("protein", 0) or 0
-    fibre   = n.get("fibre", 0) or 0
-    sat_fat = n.get("saturatedFat", 0) or 0
-    sodium  = n.get("salt", 0) or 0
+    """Return 'Gold', 'Silver', 'Bronze', or 'Unranked'.
 
-    # Gold: ALL 4 criteria
-    if protein >= 50 and fibre >= 10 and sat_fat <= 10 and sodium <= 1200:
-        return "Gold"
+    Green thresholds (one point each):
+      Protein ≥50g | Fibre ≥10g | Sat Fat ≤8g | Sodium ≤800mg | Kcal 500–800
 
-    # Silver: 3+ of 4 criteria
-    silver_hits = sum([
-        protein >= 50,
-        fibre   >= 8,
-        sat_fat <= 13,
-        sodium  <= 1500,
-    ])
-    if silver_hits >= 3:
-        return "Silver"
+    Red thresholds (penalty):
+      Protein <35g | Fibre <5g | Sat Fat >15g | Sodium >1500mg | Kcal >1100
 
-    # Bronze: 2+ of 4 criteria
-    bronze_hits = sum([
-        protein >= 40,
-        fibre   >= 6,
-        sat_fat <= 15,
-        sodium  <= 1800,
-    ])
-    if bronze_hits >= 2:
-        return "Bronze"
+    Ranking:
+      Gold   = ≥3 greens + 0 reds + protein ≥40g
+      Silver = (≥2 greens, 0 reds) or (≥3 greens, 1 red) + protein ≥40g
+      Bronze = ≥1 green + ≤1 red  (or protein 30–39g with above)
+      NR     = protein <30g, or 2+ reds, or 0 greens
+    """
+    p    = n.get("protein", 0) or 0
+    f    = n.get("fibre", 0) or 0
+    s    = n.get("saturatedFat", 0) or 0
+    na   = n.get("salt", 0) or 0
+    kcal = n.get("energyInKiloCalories", 0) or 0
 
-    return "Unranked"
+    if p < 30:
+        return "Unranked"
+
+    greens = sum([p >= 50, f >= 10, s <= 8, na <= 800, 500 <= kcal <= 800])
+    reds   = sum([p < 35,  f < 5,   s > 15, na > 1500, kcal > 1100])
+
+    if greens >= 3 and reds == 0:
+        rank = "Gold"
+    elif (greens >= 2 and reds == 0) or (greens >= 3 and reds <= 1):
+        rank = "Silver"
+    elif greens >= 1 and reds <= 1:
+        rank = "Bronze"
+    else:
+        rank = "Unranked"
+
+    # Hard floor: under 30g protein = always Unranked
+    if p < 30:
+        return "Unranked"
+    # Protein ≥40g required for Silver or Gold
+    if rank in ("Gold", "Silver") and p < 40:
+        rank = "Bronze"
+
+    return rank
 
 
 RANK_ORDER = {"Gold": 0, "Silver": 1, "Bronze": 2, "Unranked": 3}
