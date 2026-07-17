@@ -151,8 +151,10 @@ def rank_meal(n):
     # Hard floor: under 30g protein = always Unranked
     if p < 30:
         return "Unranked"
-    # Protein ≥40g required for Silver or Gold
-    if rank in ("Gold", "Silver") and p < 40:
+    # Protein ≥50g required for Gold; ≥40g required for Silver
+    if rank == "Gold" and p < 50:
+        rank = "Silver" if p >= 40 else "Bronze"
+    elif rank == "Silver" and p < 40:
         rank = "Bronze"
 
     return rank
@@ -234,6 +236,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <title>UCook Nutrition — This Week</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F468;&#x200D;&#x1F373;</text></svg>">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
