@@ -196,8 +196,8 @@ def fetch_all_meals():
             cook_max = overall.get("max", "")
             cook_time = f"{cook_min}–{cook_max} min" if cook_min else ""
 
-            spice_map = {"HOT": "🌶🌶🌶", "MEDIUM": "🌶🌶", "MILD": "🌶", "NONE": "—", None: "—", "": "—"}
-            spice = spice_map.get(dish.get("spiceLevel"), dish.get("spiceLevel") or "—")
+            spice_map = {"HOT": "🌶🌶🌶", "MEDIUM": "🌶🌶", "MILD": "🌶", "NONE": "", None: "", "": ""}
+            spice = spice_map.get(dish.get("spiceLevel"), "")
 
             category = categories[0] if categories else ""
 
@@ -506,7 +506,6 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <tr>
         <th class="meal-cell" onclick="sortBy('name')" data-col="name">Meal</th>
         <th onclick="sortBy('category')" data-col="category">Category</th>
-        <th onclick="sortBy('spice')" data-col="spice">Spice</th>
         <th onclick="sortBy('cookWithin')" data-col="cookWithin" class="num">Eat within</th>
         <th onclick="sortBy('protein')" data-col="protein" class="num">Protein (g)</th>
         <th onclick="sortBy('fibre')" data-col="fibre" class="num">Fibre (g)</th>
@@ -524,7 +523,7 @@ const RAW = __DATA__;
 
 let sortStack = [{ col: 'rankOrder', dir: 1 }];
 
-const STRING_COLS = new Set(['name','spice','category']);
+const STRING_COLS = new Set(['name','category']);
 const DEFAULT_DIR = col => (STRING_COLS.has(col) || col === 'rankOrder' || col === 'cookWithin') ? 1 : -1;
 
 function sortBy(col) {
@@ -558,6 +557,8 @@ function redFlags(m) {
   if (m.saturatedFat > 15)   flags.push('Sat Fat &gt;15g');
   if (m.sodium > 1500)       flags.push('Sodium &gt;1500mg');
   if (m.kcal > 1100)         flags.push('Kcal &gt;1100');
+  if (m.carbs > 60)          flags.push('Carbs &gt;60g');
+  if (m.sugars > 20)         flags.push('Sugar &gt;20g');
   if (!flags.length) return '';
   return `<div class="red-flags">${flags.map(f => `<span class="red-flag-pill">⚑ ${f}</span>`).join('')}</div>`;
 }
@@ -595,6 +596,7 @@ function renderTable() {
       <td class="meal-cell">
         <div class="meal-name">
           ${dotHtml(m.rank)}${esc(m.name)}
+          ${m.spice ? `<span title="${m.spice === '🌶🌶🌶' ? 'Hot' : m.spice === '🌶🌶' ? 'Medium' : 'Mild'}">${m.spice}</span>` : ''}
           ${m.mushrooms ? '<span title="Contains mushrooms">🍄</span>' : ''}
         </div>
         ${m.subTitle ? `<div class="meal-sub">${esc(m.subTitle)}</div>` : ''}
@@ -603,7 +605,6 @@ function renderTable() {
         <div class="meal-link"><a href="${m.url}" target="_blank">View on UCook ↗</a></div>
       </td>
       <td style="white-space:nowrap;font-size:0.8rem;color:var(--text-dim)">${esc(m.category)}</td>
-      <td>${m.spice}</td>
       <td class="num" style="white-space:nowrap">${m.cookWithin ? m.cookWithin + ' days' : '—'}</td>
       <td class="num${cProtein(m.protein)}">${fmt(m.protein)}</td>
       <td class="num${cFibre(m.fibre)}">${fmt(m.fibre)}</td>
