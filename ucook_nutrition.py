@@ -557,7 +557,7 @@ function redFlags(m) {
   if (m.saturatedFat > 15)   flags.push('Sat Fat &gt;15g');
   if (m.sodium > 1500)       flags.push('Sodium &gt;1500mg');
   if (m.kcal > 1100)         flags.push('Kcal &gt;1100');
-  if (m.carbs > 60)          flags.push('Carbs &gt;60g');
+  if (m.carbs > 70)          flags.push('Carbs &gt;70g');
   if (m.sugars > 20)         flags.push('Sugar &gt;20g');
   if (!flags.length) return '';
   return `<div class="red-flags">${flags.map(f => `<span class="red-flag-pill">⚑ ${f}</span>`).join('')}</div>`;
